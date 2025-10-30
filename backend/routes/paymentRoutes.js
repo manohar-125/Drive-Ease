@@ -20,6 +20,7 @@ router.post('/', async (req, res) => {
     const application = await Application.findOne({ applicationNumber });
     if (application) {
       application.paymentStatus = 'completed';
+      application.paymentCompleted = true;
       application.paymentAmount = amount;
       application.paymentDate = new Date();
       application.applicationStatus = 'submitted';

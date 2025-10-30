@@ -4,7 +4,7 @@ const Application = require('../models/Application');
 const DigiLockerService = require('../services/digilockerService');
 const otpVerificationService = require('../services/otpVerificationService');
 const Holiday = require('../models/Holiday');
-const SlotBooking = require('../models/SlotBooking');
+const DailyBooking = require('../models/DailyBooking');
 
 // Generate OTP for phone verification
 router.post('/otp/generate', async (req, res) => {
@@ -170,7 +170,6 @@ router.post('/', async (req, res) => {
       colorTestDate,
       learnerTestDate,
       photoUploaded: photoUploaded || false,
-      status: 'submitted',
       applicationStatus: 'submitted',
       submissionDate: new Date()
     });
@@ -184,7 +183,7 @@ router.post('/', async (req, res) => {
         applicationNumber: savedApplication.applicationNumber,
         _id: savedApplication._id,
         email: savedApplication.email,
-        status: savedApplication.status,
+        applicationStatus: savedApplication.applicationStatus,
         submissionDate: savedApplication.submissionDate
       }
     });
@@ -281,7 +280,6 @@ router.post('/submit', async (req, res) => {
       existingApplication.isPhoneVerified = true;
       existingApplication.photoUploaded = true;
       existingApplication.applicationStatus = 'registration_complete';
-      existingApplication.status = 'registration_complete';
       
       if (applicationType) existingApplication.applicationType = applicationType;
       if (colorTestDate) existingApplication.colorTestDate = new Date(colorTestDate);
@@ -320,11 +318,9 @@ router.post('/submit', async (req, res) => {
     // Add optional fields only if provided
     if (!isRegistrationOnly) {
       applicationData.applicationType = applicationType || 'Two Wheeler';
-      applicationData.status = 'submitted';
       applicationData.applicationStatus = 'submitted';
     } else {
       applicationData.applicationType = applicationType || 'Two Wheeler';
-      applicationData.status = 'registration_complete';
       applicationData.applicationStatus = 'registration_complete';
     }
     
@@ -350,7 +346,7 @@ router.post('/submit', async (req, res) => {
         _id: savedApplication._id,
         applicationNumber: savedApplication.applicationNumber,
         email: savedApplication.email,
-        status: savedApplication.status,
+        applicationStatus: savedApplication.applicationStatus,
         submissionDate: savedApplication.submissionDate,
         colorTestDate: savedApplication.colorTestDate,
         learnerTestDate: savedApplication.learnerTestDate
@@ -410,74 +406,38 @@ router.post('/book-slots', async (req, res) => {
       });
     }
 
-    // Book color test slot
-    let colorSlot = await SlotBooking.findOne({ 
-      date: colorTestDate, 
-      testType: 'colorVision' 
-    });
-    
-    if (!colorSlot) {
-      colorSlot = new SlotBooking({
-        date: colorTestDate,
-        testType: 'colorVision',
-        bookedSlots: 0,
-        maxSlots: 5,
-        bookings: []
-      });
-    }
-    
-    // Check if slots available
-    if (colorSlot.bookedSlots >= colorSlot.maxSlots) {
+    // Check availability for color test
+    const colorAvailability = await DailyBooking.checkAvailability(colorTestDate, 'colorVision');
+    if (!colorAvailability.available) {
       return res.status(400).json({
         success: false,
-        message: 'Color test slots full for this date'
+        message: colorAvailability.reason || 'Color test slots full for this date'
       });
     }
     
-    // Book learner test slot
-    let learnerSlot = await SlotBooking.findOne({ 
-      date: learnerTestDate, 
-      testType: 'learnerTest' 
-    });
-    
-    if (!learnerSlot) {
-      learnerSlot = new SlotBooking({
-        date: learnerTestDate,
-        testType: 'learnerTest',
-        bookedSlots: 0,
-        maxSlots: 5,
-        bookings: []
-      });
-    }
-    
-    // Check if slots available
-    if (learnerSlot.bookedSlots >= learnerSlot.maxSlots) {
+    // Check availability for learner test
+    const learnerAvailability = await DailyBooking.checkAvailability(learnerTestDate, 'learnerTest');
+    if (!learnerAvailability.available) {
       return res.status(400).json({
         success: false,
-        message: 'Learner test slots full for this date'
+        message: learnerAvailability.reason || 'Learner test slots full for this date'
       });
     }
-    
-    // Add bookings
-    colorSlot.bookedSlots += 1;
-    colorSlot.bookings.push({
-      digiLockerId: digilocker,
-      bookedAt: new Date()
-    });
-    
-    learnerSlot.bookedSlots += 1;
-    learnerSlot.bookings.push({
-      digiLockerId: digilocker,
-      bookedAt: new Date()
-    });
-    
-    await colorSlot.save();
-    await learnerSlot.save();
+
+    // Book both slots
+    try {
+      await DailyBooking.bookSlot(colorTestDate, 'colorVision', digilocker);
+      await DailyBooking.bookSlot(learnerTestDate, 'learnerTest', digilocker);
+    } catch (bookingError) {
+      return res.status(400).json({
+        success: false,
+        message: bookingError.message || 'Failed to book slots'
+      });
+    }
 
     // Update application with test dates
     application.colorTestDate = new Date(colorTestDate);
     application.learnerTestDate = new Date(learnerTestDate);
-    application.status = 'slots_booked';
     application.applicationStatus = 'slots_booked';
 
     await application.save();
@@ -495,6 +455,91 @@ router.post('/book-slots', async (req, res) => {
     });
   }
 });
+
+// @route   POST /api/applications/complete-color-test
+// @desc    Complete color vision test (Step 3)
+// @access  Public
+router.post('/complete-color-test', async (req, res) => {
+  try {
+    const { applicationNumber, digiLockerId, score, passed } = req.body;
+
+    // Find application
+    const application = await Application.findOne({ 
+      applicationNumber,
+      digilocker: digiLockerId 
+    });
+
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        message: 'Application not found'
+      });
+    }
+
+    // Precondition checks
+    if (!application.paymentCompleted || application.paymentStatus !== 'completed') {
+      return res.status(403).json({
+        success: false,
+        message: 'Payment not completed. Please complete payment before attempting the test.'
+      });
+    }
+
+    if (application.colorVisionTestCompleted) {
+      return res.status(409).json({
+        success: false,
+        message: 'Color vision test already attempted.'
+      });
+    }
+
+    // Check if user passed (70% required)
+    if (!passed || score < 70) {
+      // Test failed - don't mark as completed, allow retry
+      return res.status(400).json({
+        success: false,
+        passed: false,
+        score: score,
+        message: `Test failed with ${score.toFixed(1)}% score. You need 70% to pass. Please try again.`
+      });
+    }
+
+    // Mark test as completed (only if passed)
+    application.colorVisionTestCompleted = true;
+    application.colorVisionTestDate = new Date();
+    await application.save();
+
+    // Send notification (non-blocking)
+    sendTestCompletionNotification(application).catch(err => 
+      console.error('Notification failed:', err)
+    );
+
+    res.json({
+      success: true,
+      applicationNumber: application.applicationNumber,
+      colorVisionTestCompleted: true,
+      colorVisionTestDate: application.colorVisionTestDate,
+      score: score,
+      message: `Congratulations! Color vision test passed with ${score.toFixed(1)}% score. You are qualified for the learner test.`
+    });
+
+  } catch (error) {
+    console.error('Error completing color test:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error processing test completion'
+    });
+  }
+});
+
+// Helper: Evaluate color test result (auto-pass for now, hook for future logic)
+function evaluateColourTestResult() {
+  // Future: implement actual test logic here
+  return { passed: true };
+}
+
+async function sendTestCompletionNotification(application) {
+  // Future: implement email/SMS service
+  return true;
+}
 
 // @route   GET /api/applications/valid-digilocker-ids
 // @desc    Get all valid DigiLocker IDs
@@ -572,14 +617,16 @@ router.get('/calendar-availability', async (req, res) => {
     const start = startDate ? new Date(startDate) : new Date();
     const end = endDate ? new Date(endDate) : new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
     
-    // Get all holidays in the range
     const holidays = await Holiday.find({
       date: { $gte: start, $lte: end }
     });
     
-    console.log(`Found ${holidays.length} holidays in range ${start.toISOString().split('T')[0]} to ${end.toISOString().split('T')[0]}`);
+    // Get all bookings in the range using DailyBooking
+    const bookings = await DailyBooking.find({
+      date: { $gte: start, $lte: end }
+    });
     
-    // Get all slot bookings in the range
+    // Create availability map
     const dateArray = [];
     const currentDate = new Date(start);
     
@@ -589,13 +636,6 @@ router.get('/calendar-availability', async (req, res) => {
       currentDate.setDate(currentDate.getDate() + 1);
     }
     
-    // Check slot availability for each date
-    const slotBookings = await SlotBooking.find({
-      date: { $in: dateArray },
-      testType: testType || 'colorVision'
-    });
-    
-    // Create availability map
     const availabilityMap = {};
     
     dateArray.forEach(dateStr => {
@@ -614,16 +654,20 @@ router.get('/calendar-availability', async (req, res) => {
       const isSaturday = dayOfWeek === 6;
       const isWeekend = isSunday || isSaturday;
       
-      // Get slot booking for this date
-      const booking = slotBookings.find(b => b.date === dateStr);
-      const bookedSlots = booking ? booking.bookedSlots : 0;
+      // Get booking for this date
+      const booking = bookings.find(b => 
+        b.date.toISOString().split('T')[0] === dateStr
+      );
+      
+      const bookingField = testType === 'learnerTest' ? 'learnerTestBookings' : 'colorVisionBookings';
+      const bookedSlots = booking ? (booking[bookingField] || 0) : 0;
       const maxSlots = 5;
       const availableSlots = maxSlots - bookedSlots;
       
       let status = 'available';
       let color = 'green';
       
-      if (isHoliday || isWeekend) {
+      if (isHoliday || isWeekend || booking?.isHoliday) {
         status = 'holiday';
         color = 'red';
       } else if (availableSlots === 0) {
@@ -640,6 +684,8 @@ router.get('/calendar-availability', async (req, res) => {
         holidayName = isSunday ? 'Sunday' : 'Saturday';
       } else if (holidayObj) {
         holidayName = holidayObj.name;
+      } else if (booking?.isHoliday) {
+        holidayName = booking.holidayReason;
       }
       
       availabilityMap[dateStr] = {
@@ -649,14 +695,10 @@ router.get('/calendar-availability', async (req, res) => {
         availableSlots,
         maxSlots,
         bookedSlots,
-        isHoliday: isHoliday || isWeekend,
+        isHoliday: isHoliday || isWeekend || booking?.isHoliday,
         holidayName
       };
     });
-    
-    // Log some sample dates for debugging
-    const sampleDates = Object.keys(availabilityMap).slice(0, 5);
-    console.log('Sample availability data:', sampleDates.map(d => ({ date: d, ...availabilityMap[d] })));
     
     res.json({
       success: true,
@@ -764,7 +806,7 @@ router.put('/:id/status', async (req, res) => {
 
     const application = await Application.findOneAndUpdate(
       { applicationId: req.params.id },
-      { status, updatedAt: Date.now() },
+      { applicationStatus: status, updatedAt: Date.now() },
       { new: true }
     );
 
@@ -780,7 +822,7 @@ router.put('/:id/status', async (req, res) => {
       message: 'Application status updated successfully',
       data: {
         applicationId: application.applicationId,
-        status: application.status
+        applicationStatus: application.applicationStatus
       }
     });
 
@@ -1096,6 +1138,180 @@ router.put('/complete-road-test/:digilockerID', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error while updating test status'
+    });
+  }
+});
+
+// @route   PUT /api/applications/complete-road-test/:digilockerID
+// @desc    Mark road test as completed
+// @access  Public
+router.put('/complete-road-test/:digilockerID', async (req, res) => {
+  try {
+    const { digilockerID } = req.params;
+    
+    if (!digilockerID) {
+      return res.status(400).json({
+        success: false,
+        message: 'DigiLocker ID is required'
+      });
+    }
+
+    const application = await Application.findOne({ digilocker: digilockerID });
+    
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        message: 'No application found for this DigiLocker ID'
+      });
+    }
+
+    // Check if learner license is downloaded
+    if (!application.learnerLicenseDownloaded) {
+      return res.status(400).json({
+        success: false,
+        message: 'Learner license must be downloaded before road test'
+      });
+    }
+
+    // Update road test status
+    application.roadTestCompleted = true;
+    application.roadTestDate = new Date();
+    
+    await application.save();
+
+    res.json({
+      success: true,
+      message: 'Road test completed successfully',
+      data: {
+        roadTestCompleted: application.roadTestCompleted,
+        roadTestDate: application.roadTestDate
+      }
+    });
+  } catch (error) {
+    console.error('Error completing road test:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while updating test status'
+    });
+  }
+});
+
+// @route   POST /api/applications/learner-test-result
+// @desc    Submit learner test result
+// @access  Public
+router.post('/learner-test-result', async (req, res) => {
+  try {
+    const { digilocker, passed } = req.body;
+    
+    if (!digilocker) {
+      return res.status(400).json({
+        success: false,
+        message: 'DigiLocker ID is required'
+      });
+    }
+
+    const application = await Application.findOne({ digilocker });
+    
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        message: 'No application found for this DigiLocker ID'
+      });
+    }
+
+    // Check if color vision test is completed
+    if (!application.colorVisionTestCompleted) {
+      return res.status(400).json({
+        success: false,
+        message: 'Color vision test must be completed first'
+      });
+    }
+
+    // Check if already completed
+    if (application.learnerTestCompleted) {
+      return res.status(400).json({
+        success: false,
+        message: 'Learner test already completed'
+      });
+    }
+
+    if (passed) {
+      // Update learner test status
+      application.learnerTestCompleted = true;
+      application.learnerTestDate = new Date();
+      await application.save();
+
+      res.json({
+        success: true,
+        message: 'Learner test completed successfully',
+        data: {
+          learnerTestCompleted: application.learnerTestCompleted,
+          learnerTestDate: application.learnerTestDate
+        }
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: 'Learner test failed. Please try again.'
+      });
+    }
+  } catch (error) {
+    console.error('Error submitting learner test result:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while processing test result'
+    });
+  }
+});
+
+// @route   POST /api/applications/apply-road-test
+// @desc    Apply for road test
+// @access  Public
+router.post('/apply-road-test', async (req, res) => {
+  try {
+    const { digilocker } = req.body;
+    
+    if (!digilocker) {
+      return res.status(400).json({
+        success: false,
+        message: 'DigiLocker ID is required'
+      });
+    }
+
+    const application = await Application.findOne({ digilocker });
+    
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        message: 'No application found for this DigiLocker ID'
+      });
+    }
+
+    // Check if learner test is completed
+    if (!application.learnerTestCompleted) {
+      return res.status(400).json({
+        success: false,
+        message: 'Learner test must be completed before applying for road test'
+      });
+    }
+
+    // Update application status to indicate road test application
+    application.applicationStatus = 'completed';
+    await application.save();
+
+    res.json({
+      success: true,
+      message: 'Road test application submitted successfully',
+      data: {
+        applicationNumber: application.applicationNumber,
+        applicationStatus: application.applicationStatus
+      }
+    });
+  } catch (error) {
+    console.error('Error applying for road test:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while applying for road test'
     });
   }
 });

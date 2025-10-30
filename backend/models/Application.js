@@ -199,11 +199,6 @@ const ApplicationSchema = new mongoose.Schema({
     type: String,
     enum: ['draft', 'registration_complete', 'slots_booked', 'submitted', 'under_review', 'approved', 'rejected', 'completed'],
     default: 'draft'
-  },
-  status: {
-    type: String,
-    enum: ['draft', 'registration_complete', 'slots_booked', 'submitted', 'under_review', 'approved', 'rejected'],
-    default: 'draft'
   }
 });
 

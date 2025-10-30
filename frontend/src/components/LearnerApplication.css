@@ -1,0 +1,564 @@
+/* LearnerApplication.css */
+
+.learner-application {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px 0;
+}
+
+.application-header {
+  max-width: 1000px;
+  margin: 0 auto 30px auto;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.back-btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.back-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateX(-5px);
+}
+
+.application-header h2 {
+  color: white;
+  margin: 0;
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.application-content {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.user-info-card {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 25px;
+  border-radius: 15px;
+  margin-bottom: 30px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.user-info-card h3 {
+  margin: 0 0 20px 0;
+  color: #2d3748;
+  font-size: 20px;
+  font-weight: 600;
+  border-bottom: 2px solid #667eea;
+  padding-bottom: 10px;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.info-item .label {
+  font-weight: 600;
+  color: #4a5568;
+  font-size: 14px;
+}
+
+.info-item .value {
+  color: #2d3748;
+  font-size: 16px;
+  background: #f7fafc;
+  padding: 8px 12px;
+  border-radius: 6px;
+}
+
+.application-form {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 30px;
+  border-radius: 15px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.form-section {
+  margin-bottom: 35px;
+  padding-bottom: 25px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.form-section:last-of-type {
+  border-bottom: none;
+}
+
+.form-section h3 {
+  margin: 0 0 20px 0;
+  color: #2d3748;
+  font-size: 18px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #4a5568;
+  font-size: 14px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: #667eea;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.input-with-button {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.input-with-button input {
+  flex: 1;
+}
+
+.btn-verify {
+  background: #48bb78;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: all 0.3s ease;
+}
+
+.btn-verify:hover:not(:disabled) {
+  background: #38a169;
+  transform: translateY(-2px);
+}
+
+.btn-verify:disabled {
+  background: #a0aec0;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.otp-section {
+  margin-top: 15px;
+  padding: 20px;
+  background: #f0fff4;
+  border-radius: 8px;
+  border: 1px solid #c6f6d5;
+}
+
+.otp-section p {
+  margin: 0 0 15px 0;
+  font-size: 14px;
+  color: #2f855a;
+  font-weight: 500;
+}
+
+.error {
+  color: #e53e3e;
+  font-size: 12px;
+  margin-top: 5px;
+  display: block;
+  font-weight: 500;
+}
+
+.success {
+  color: #38a169;
+  font-size: 12px;
+  margin-top: 5px;
+  display: block;
+  font-weight: 500;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-weight: normal !important;
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: auto !important;
+  margin: 0;
+  transform: scale(1.2);
+}
+
+.form-buttons {
+  display: flex;
+  gap: 20px;
+  margin-top: 30px;
+  justify-content: center;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border: none;
+  padding: 15px 40px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+}
+
+.btn-primary:disabled {
+  background: #a0aec0;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-secondary {
+  background: #718096;
+  color: white;
+  border: none;
+  padding: 15px 40px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background: #4a5568;
+  transform: translateY(-2px);
+}
+
+.submit-error {
+  margin-top: 20px;
+  text-align: center;
+  font-weight: 600;
+  padding: 15px;
+  background: #fed7d7;
+  border-radius: 8px;
+  border: 1px solid #feb2b2;
+}
+
+/* Payment Page Styles */
+.payment-page {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.payment-container {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 40px;
+  border-radius: 15px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  max-width: 500px;
+  width: 100%;
+  backdrop-filter: blur(10px);
+}
+
+.payment-container h2 {
+  color: #2d3748;
+  margin-bottom: 30px;
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.payment-info {
+  background: #f7fafc;
+  padding: 25px;
+  border-radius: 12px;
+  margin-bottom: 30px;
+  text-align: left;
+}
+
+.payment-info p {
+  margin: 12px 0;
+  font-size: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.payment-info strong {
+  color: #2d3748;
+}
+
+.payment-buttons {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+}
+
+.payment-buttons .btn-primary {
+  background: linear-gradient(135deg, #48bb78, #38a169);
+  padding: 18px 45px;
+  font-size: 18px;
+}
+
+.payment-buttons .btn-secondary {
+  padding: 18px 45px;
+  font-size: 18px;
+}
+
+/* Success Page Styles */
+.success-page {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.success-container {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 50px;
+  border-radius: 15px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  max-width: 600px;
+  width: 100%;
+  backdrop-filter: blur(10px);
+}
+
+.success-container h2 {
+  color: #38a169;
+  margin-bottom: 30px;
+  font-size: 32px;
+  font-weight: 600;
+}
+
+.success-details {
+  background: #f0fff4;
+  border: 2px solid #c6f6d5;
+  border-radius: 12px;
+  padding: 25px;
+  margin-bottom: 30px;
+  text-align: left;
+}
+
+.success-details p {
+  margin: 12px 0;
+  font-size: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.success-details strong {
+  color: #2f855a;
+}
+
+.success-actions {
+  display: flex;
+  justify-content: center;
+}
+
+/* Loading */
+.loading-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top: 4px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* File input styling */
+input[type="file"] {
+  padding: 10px !important;
+  border: 2px dashed #cbd5e0 !important;
+  background-color: #f7fafc !important;
+  border-radius: 8px !important;
+}
+
+input[type="file"]:hover {
+  border-color: #667eea !important;
+  background-color: #edf2f7 !important;
+}
+
+/* Select styling */
+select {
+  appearance: menulist;
+  background-color: white;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 8px center;
+  background-repeat: no-repeat;
+  background-size: 16px;
+  padding-right: 40px;
+}
+
+/* Textarea styling */
+textarea {
+  resize: vertical;
+  min-height: 100px;
+  font-family: inherit;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .application-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .application-header h2 {
+    font-size: 24px;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .input-with-button {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .form-buttons {
+    flex-direction: column;
+  }
+  
+  .payment-buttons {
+    flex-direction: column;
+  }
+  
+  .payment-container,
+  .success-container {
+    margin: 20px;
+    padding: 30px;
+  }
+  
+  .user-info-card,
+  .application-form {
+    padding: 20px;
+  }
+  
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .application-header {
+    padding: 0 15px;
+  }
+  
+  .application-content {
+    padding: 0 15px;
+  }
+  
+  .user-info-card,
+  .application-form {
+    padding: 15px;
+  }
+  
+  .payment-container,
+  .success-container {
+    padding: 20px;
+  }
+  
+  .payment-container h2,
+  .success-container h2 {
+    font-size: 24px;
+  }
+  
+  .btn-primary,
+  .btn-secondary {
+    padding: 12px 30px;
+    font-size: 14px;
+  }
+}
+
+/* Error message styles for DateSelector */
+.error-message {
+  background: #fee2e2;
+  color: #dc2626;
+  padding: 10px 15px;
+  border-radius: 8px;
+  margin: 10px 0;
+  border: 1px solid #fecaca;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.section-description {
+  color: #64748b;
+  font-size: 0.9rem;
+  margin: 10px 0 20px 0;
+  line-height: 1.5;
+}

@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import TestDateSelector from './TestDateSelector';
+import ColorVisionTest from './ColorVisionTest';
 import './ApplicationDashboard.css';
 
 const ApplicationDashboard = ({ userSession, onLogout }) => {
   const [showDashboard, setShowDashboard] = useState(true); // Show dashboard menu by default
   const [currentStep, setCurrentStep] = useState(1);
   const [completedSteps, setCompletedSteps] = useState([]);
+  const [showColorTest, setShowColorTest] = useState(false);
   
   const userData = userSession?.userData || {};
   const digiLockerId = userSession?.digiLockerId || '';
@@ -52,12 +54,6 @@ const ApplicationDashboard = ({ userSession, onLogout }) => {
     if (userSession?.hasExistingApplication && userSession?.applicationData) {
       const appData = userSession.applicationData;
       
-      console.log('Loading application data:', appData);
-      console.log('Payment Status:', appData.paymentStatus);
-      console.log('Application Status:', appData.applicationStatus);
-      console.log('Color Test Date:', appData.colorTestDate);
-      console.log('Learner Test Date:', appData.learnerTestDate);
-      
       setFormData({
         phone: appData.phone || '',
         email: appData.email || '',
@@ -75,43 +71,33 @@ const ApplicationDashboard = ({ userSession, onLogout }) => {
       
       setApplicationNumber(appData.applicationNumber || '');
       
-      // Determine completed steps based on application state
       const completed = [];
       
-      // Step 1: Registration complete (check if applicationStatus is registration_complete or higher)
       if (appData.applicationStatus && ['registration_complete', 'slots_booked', 'submitted', 'under_review', 'approved', 'rejected', 'completed'].includes(appData.applicationStatus)) {
         completed.push(1);
         setPhoneVerified(true);
         setPhotoUploaded(true);
       }
       
-      // Step 2: Both test dates booked and payment done
       if (appData.colorTestDate && appData.learnerTestDate && appData.paymentStatus === 'completed') {
         completed.push(2);
       }
       
-      // Step 3: Color test passed
       if (appData.colorVisionTestCompleted) {
         completed.push(3);
       }
       
-      // Step 4: Learner test passed
       if (appData.learnerTestCompleted) {
         completed.push(4);
       }
       
-      // Step 5: Road test completed or application is completed
       if (appData.roadTestCompleted || appData.applicationStatus === 'completed') {
         completed.push(5);
       }
       
-      console.log('Completed steps:', completed);
-      
       setCompletedSteps(completed);
       
-      // Set current step to the first incomplete step
       const nextIncompleteStep = completed.length < 5 ? completed.length + 1 : 5;
-      console.log('Next incomplete step:', nextIncompleteStep);
       setCurrentStep(nextIncompleteStep);
     }
   }, [userSession]);
@@ -350,28 +336,30 @@ const ApplicationDashboard = ({ userSession, onLogout }) => {
   };
 
   // STEP 3: Take Color Vision Test
-  const takeColorTest = async () => {
-    setLoading(true);
-    
-    try {
-      // Simulate color test
-      const passed = Math.random() > 0.1; // 90% pass rate
-      
-      const response = await axios.post('http://localhost:5001/api/applications/color-test-result', {
-        digilocker: digiLockerId,
-        passed: passed
-      });
+  const takeColorTest = () => {
+    setShowColorTest(true);
+    setShowDashboard(false);
+  };
 
-      if (response.data.success && passed) {
-        setFormData(prev => ({ ...prev, colorTestPassed: true }));
-        completeCurrentStep(3);
-      } else {
-        setErrors({ test: 'Color test failed. Please retry.' });
-      }
-    } catch (error) {
-      setErrors({ test: 'Test submission failed' });
-    } finally {
-      setLoading(false);
+  // Handle test completion
+  const handleTestComplete = (result) => {
+    setShowColorTest(false);
+    setShowDashboard(true);
+    
+    if (result.success && result.passed) {
+      setFormData(prev => ({ ...prev, colorTestPassed: true }));
+      completeCurrentStep(3);
+      alert(`✅ ${result.message}\n\nScore: ${result.score.toFixed(1)}%`);
+    } else {
+      alert(`❌ Test Failed\n\nScore: ${result.score.toFixed(1)}%\nYou need 70% to pass.\n\n${result.message || 'Please try again.'}`);
+    }
+  };
+
+  // Handle test cancellation
+  const handleTestCancel = () => {
+    if (window.confirm('Are you sure you want to cancel the test? Your progress will be lost.')) {
+      setShowColorTest(false);
+      setShowDashboard(true);
     }
   };
 
@@ -423,6 +411,19 @@ const ApplicationDashboard = ({ userSession, onLogout }) => {
 
   return (
     <div className="dashboard-container">
+      {/* Color Vision Test Interface */}
+      {showColorTest && (
+        <ColorVisionTest
+          applicationNumber={applicationNumber}
+          digiLockerId={digiLockerId}
+          onTestComplete={handleTestComplete}
+          onCancel={handleTestCancel}
+        />
+      )}
+
+      {/* Main Dashboard - Hidden when test is active */}
+      {!showColorTest && (
+        <div>
       {/* Header */}
       <div className="dashboard-header">
         <div className="header-content">
@@ -488,7 +489,7 @@ const ApplicationDashboard = ({ userSession, onLogout }) => {
           </div>
         </div>
       ) : (
-        <>
+        <div>
           {/* Back to Dashboard Button */}
           <div className="back-to-dashboard">
             <button onClick={() => setShowDashboard(true)} className="back-btn">
@@ -894,6 +895,10 @@ const ApplicationDashboard = ({ userSession, onLogout }) => {
           </div>
         )}
       </div>
+      </div>
+      )}
+      </div>
+      )}
 
       {/* Payment Success Modal - Moved outside step conditions */}
       {showPaymentModal && (
@@ -936,9 +941,7 @@ const ApplicationDashboard = ({ userSession, onLogout }) => {
           </div>
         </div>
       )}
-
-      </>
-      )}
+      
     </div>
   );
 };
