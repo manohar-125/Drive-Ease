@@ -1,14 +1,19 @@
 const mongoose = require('mongoose');
 const validator = require('validator');
+const bcrypt = require('bcryptjs');
 
 const ApplicationSchema = new mongoose.Schema({
-  // Auto-generated Application Number
   applicationNumber: {
     type: String,
     unique: true
   },
   
-  // DigiLocker Information (Primary)
+  password: {
+    type: String,
+    required: [true, 'Password is required'],
+    minlength: 6
+  },
+  
   digilocker: {
     type: String,
     required: [true, 'DigiLocker ID is required'],
@@ -20,7 +25,6 @@ const ApplicationSchema = new mongoose.Schema({
     default: false
   },
   
-  // Personal Information (Auto-fetched from DigiLocker)
   fullName: {
     type: String,
     required: [true, 'Full name is required'],
@@ -43,7 +47,6 @@ const ApplicationSchema = new mongoose.Schema({
     enum: ['Male', 'Female', 'Other']
   },
   
-  // Contact Information (User Input)
   phone: {
     type: String,
     required: [true, 'Phone number is required'],
@@ -68,7 +71,6 @@ const ApplicationSchema = new mongoose.Schema({
     validate: [validator.isEmail, 'Please provide a valid email']
   },
   
-  // Address Information (User Input)
   address: {
     type: String,
     required: [true, 'Address is required'],
@@ -95,14 +97,12 @@ const ApplicationSchema = new mongoose.Schema({
     }
   },
   
-  // Application Type
   applicationType: {
     type: String,
     required: false,
     enum: ['Two Wheeler', 'Four Wheeler', 'Two Cum Four Wheeler', 'Heavy Vehicle', 'Light Motor Vehicle']
   },
   
-  // Test Slots
   colorTestDate: {
     type: Date,
     required: false
@@ -112,10 +112,9 @@ const ApplicationSchema = new mongoose.Schema({
     required: false
   },
   
-  // Photo Upload
   photoPath: {
     type: String,
-    default: null // Made optional initially, required after DigiLocker verification
+    default: null
   },
   photoUploaded: {
     type: Boolean,
@@ -126,7 +125,6 @@ const ApplicationSchema = new mongoose.Schema({
     default: null
   },
   
-  // Payment Information
   paymentStatus: {
     type: String,
     enum: ['pending', 'completed', 'failed'],
@@ -144,13 +142,16 @@ const ApplicationSchema = new mongoose.Schema({
     type: Number,
     default: 500
   },
+  paymentReference: {
+    type: String,
+    default: null
+  },
   transactionId: {
     type: String,
     unique: true,
     sparse: true
   },
   
-  // Test Completion Status
   colorVisionTestCompleted: {
     type: Boolean,
     default: false
@@ -176,7 +177,6 @@ const ApplicationSchema = new mongoose.Schema({
     default: null
   },
   
-  // License Downloads
   learnerLicenseDownloaded: {
     type: Boolean,
     default: false
@@ -194,7 +194,6 @@ const ApplicationSchema = new mongoose.Schema({
     default: null
   },
   
-  // Application Status
   applicationStatus: {
     type: String,
     enum: ['draft', 'registration_complete', 'slots_booked', 'submitted', 'under_review', 'approved', 'rejected', 'completed'],
@@ -202,20 +201,30 @@ const ApplicationSchema = new mongoose.Schema({
   }
 });
 
-// Generate application number before saving
-ApplicationSchema.pre('save', function(next) {
+ApplicationSchema.pre('save', async function(next) {
   if (!this.applicationNumber) {
     this.applicationNumber = 'APP' + Date.now() + Math.floor(Math.random() * 1000);
   }
   next();
 });
 
-// Generate transaction ID when payment is completed
+ApplicationSchema.pre('save', async function(next) {
+  if (this.isModified('password')) {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+  }
+  next();
+});
+
 ApplicationSchema.pre('save', function(next) {
   if (this.paymentStatus === 'completed' && !this.transactionId) {
     this.transactionId = 'TXN' + Date.now() + Math.floor(Math.random() * 1000);
   }
   next();
 });
+
+ApplicationSchema.methods.comparePassword = async function(candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password);
+};
 
 module.exports = mongoose.model('Application', ApplicationSchema);

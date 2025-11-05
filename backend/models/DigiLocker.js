@@ -76,12 +76,10 @@ const DigiLockerSchema = new mongoose.Schema({
       message: 'PIN code must be 6 digits'
     }
   },
-  // Government verification status
   isVerified: {
     type: Boolean,
-    default: true // All records in govt database are verified
+    default: true
   },
-  // When this record was added to government database
   createdAt: {
     type: Date,
     default: Date.now

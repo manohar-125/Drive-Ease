@@ -10,7 +10,6 @@ const TestDateSelector = ({ selectedDate, onDateSelect, minDaysFromNow = 1, test
   const fetchAvailability = useCallback(async () => {
     setLoading(true);
     try {
-      // Get first and last day of current month view
       const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
       const lastDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
       
@@ -46,7 +45,6 @@ const TestDateSelector = ({ selectedDate, onDateSelect, minDaysFromNow = 1, test
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
     
-    // Use UTC dates to match backend
     const firstDay = new Date(Date.UTC(year, month, 1));
     const lastDay = new Date(Date.UTC(year, month + 1, 0));
     const daysInMonth = lastDay.getUTCDate();
@@ -54,12 +52,10 @@ const TestDateSelector = ({ selectedDate, onDateSelect, minDaysFromNow = 1, test
     
     const days = [];
     
-    // Add empty cells for days before the first day of month
     for (let i = 0; i < startingDayOfWeek; i++) {
       days.push(null);
     }
     
-    // Add all days of the month using UTC
     for (let day = 1; day <= daysInMonth; day++) {
       const dateObj = new Date(Date.UTC(year, month, day));
       days.push(dateObj);
@@ -82,7 +78,7 @@ const TestDateSelector = ({ selectedDate, onDateSelect, minDaysFromNow = 1, test
     const dateKey = formatDateKey(date);
     const dayInfo = availability[dateKey];
     
-    if (!dayInfo) return false; // Allow selection if no data
+    if (!dayInfo) return false;
     
     return dayInfo.status === 'holiday' || dayInfo.status === 'unavailable';
   };
@@ -98,11 +94,10 @@ const TestDateSelector = ({ selectedDate, onDateSelect, minDaysFromNow = 1, test
     const dayInfo = availability[dateKey];
     
     if (!dayInfo) {
-      // Default to available if no data yet
       return 'green';
     }
     
-    return dayInfo.color; // 'green', 'red', 'orange'
+    return dayInfo.color;
   };
 
   const getDateTooltip = (date) => {

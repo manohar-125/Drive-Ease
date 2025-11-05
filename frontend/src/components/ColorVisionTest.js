@@ -1,112 +1,39 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import './ColorVisionTest.css';
+
+const availableImages = [
+  { image: '0.jpg', correctAnswer: '0' },
+  { image: '1.jpg', correctAnswer: '1' },
+  { image: '2.jpg', correctAnswer: '2' },
+  { image: '3.jpg', correctAnswer: '3' },
+  { image: '4.jpg', correctAnswer: '4' },
+  { image: '5.png', correctAnswer: '5' },
+  { image: '6.jpg', correctAnswer: '6' },
+  { image: '8.jpg', correctAnswer: '8' },
+  { image: '12.jpg', correctAnswer: '12' },
+  { image: '16.jpg', correctAnswer: '16' },
+  { image: '26.jpg', correctAnswer: '26' },
+  { image: '29.jpg', correctAnswer: '29' },
+  { image: '35.jpg', correctAnswer: '35' },
+  { image: '42.jpg', correctAnswer: '42' },
+  { image: '74.png', correctAnswer: '74' },
+  { image: '96.jpg', correctAnswer: '96' }
+];
 
 const ColorVisionTest = ({ applicationNumber, digiLockerId, onTestComplete, onCancel }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [answers, setAnswers] = useState([]);
-  const [timeLeft, setTimeLeft] = useState(600); // 10 minutes
+  const [timeLeft, setTimeLeft] = useState(600);
   const [testQuestions, setTestQuestions] = useState([]);
 
-  // All available images with their correct answers
-  const availableImages = [
-    { image: '0.jpg', correctAnswer: '0' },
-    { image: '1.jpg', correctAnswer: '1' },
-    { image: '2.jpg', correctAnswer: '2' },
-    { image: '3.jpg', correctAnswer: '3' },
-    { image: '4.jpg', correctAnswer: '4' },
-    { image: '5.png', correctAnswer: '5' },
-    { image: '6.jpg', correctAnswer: '6' },
-    { image: '8.jpg', correctAnswer: '8' },
-    { image: '12.jpg', correctAnswer: '12' },
-    { image: '16.jpg', correctAnswer: '16' },
-    { image: '26.jpg', correctAnswer: '26' },
-    { image: '29.jpg', correctAnswer: '29' },
-    { image: '35.jpg', correctAnswer: '35' },
-    { image: '42.jpg', correctAnswer: '42' },
-    { image: '74.png', correctAnswer: '74' },
-    { image: '96.jpg', correctAnswer: '96' }
-  ];
-
-  // Generate wrong answers that are different from correct answer
-  const generateWrongAnswers = (correctAnswer, allAnswers) => {
-    const wrongAnswers = [];
-    const usedAnswers = new Set([correctAnswer]);
-    
-    while (wrongAnswers.length < 3) {
-      const randomAnswer = allAnswers[Math.floor(Math.random() * allAnswers.length)];
-      if (!usedAnswers.has(randomAnswer)) {
-        wrongAnswers.push(randomAnswer);
-        usedAnswers.add(randomAnswer);
-      }
-    }
-    
-    return wrongAnswers;
-  };
-
-  // Initialize test with random 10 questions
-  useEffect(() => {
-    // Shuffle and pick 10 random images
-    const shuffledImages = [...availableImages].sort(() => Math.random() - 0.5).slice(0, 10);
-    
-    // Get all possible answers for generating wrong options
-    const allPossibleAnswers = availableImages.map(img => img.correctAnswer);
-    
-    // Create questions with 1 correct + 3 wrong answers
-    const questions = shuffledImages.map(img => {
-      const wrongAnswers = generateWrongAnswers(img.correctAnswer, allPossibleAnswers);
-      const allOptions = [img.correctAnswer, ...wrongAnswers];
-      
-      // Shuffle options
-      const shuffledOptions = allOptions.sort(() => Math.random() - 0.5);
-      const correctIndex = shuffledOptions.indexOf(img.correctAnswer);
-      
-      return {
-        question: "What number do you see in the image?",
-        image: img.image,
-        options: shuffledOptions,
-        correct: correctIndex
-      };
-    });
-    
-    setTestQuestions(questions);
-  }, []);
-
-  // Timer countdown
-  useEffect(() => {
-    if (timeLeft > 0) {
-      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
-      return () => clearTimeout(timer);
-    } else {
-      handleSubmit();
-    }
-  }, [timeLeft]);
-
-  const handleAnswerSelect = (optionIndex) => {
-    setSelectedAnswer(optionIndex);
-  };
-
-  const handleNext = () => {
-    if (selectedAnswer !== null) {
-      setAnswers([...answers, selectedAnswer]);
-      setSelectedAnswer(null);
-      
-      if (currentQuestion < testQuestions.length - 1) {
-        setCurrentQuestion(currentQuestion + 1);
-      } else {
-        handleSubmit();
-      }
-    }
-  };
-
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     const finalAnswers = [...answers];
     if (selectedAnswer !== null) {
       finalAnswers.push(selectedAnswer);
     }
 
-    // Calculate score
     let correctCount = 0;
     testQuestions.forEach((q, index) => {
       if (finalAnswers[index] === q.correct) {
@@ -115,7 +42,7 @@ const ColorVisionTest = ({ applicationNumber, digiLockerId, onTestComplete, onCa
     });
 
     const score = (correctCount / testQuestions.length) * 100;
-    const passed = score >= 70; // Pass threshold: 70%
+    const passed = score >= 70;
 
     try {
       const response = await axios.post('http://localhost:5001/api/applications/complete-color-test', {
@@ -138,6 +65,70 @@ const ColorVisionTest = ({ applicationNumber, digiLockerId, onTestComplete, onCa
         score,
         message: error.response?.data?.message || 'Test submission failed'
       });
+    }
+  }, [answers, selectedAnswer, testQuestions, applicationNumber, digiLockerId, onTestComplete]);
+
+  const generateWrongAnswers = (correctAnswer, allAnswers) => {
+    const wrongAnswers = [];
+    const usedAnswers = new Set([correctAnswer]);
+    
+    while (wrongAnswers.length < 3) {
+      const randomAnswer = allAnswers[Math.floor(Math.random() * allAnswers.length)];
+      if (!usedAnswers.has(randomAnswer)) {
+        wrongAnswers.push(randomAnswer);
+        usedAnswers.add(randomAnswer);
+      }
+    }
+    
+    return wrongAnswers;
+  };
+
+  useEffect(() => {
+    const shuffledImages = [...availableImages].sort(() => Math.random() - 0.5).slice(0, 10);
+    
+    const allPossibleAnswers = availableImages.map(img => img.correctAnswer);
+    
+    const questions = shuffledImages.map(img => {
+      const wrongAnswers = generateWrongAnswers(img.correctAnswer, allPossibleAnswers);
+      const allOptions = [img.correctAnswer, ...wrongAnswers];
+      
+      const shuffledOptions = allOptions.sort(() => Math.random() - 0.5);
+      const correctIndex = shuffledOptions.indexOf(img.correctAnswer);
+      
+      return {
+        question: "What number do you see in the image?",
+        image: img.image,
+        options: shuffledOptions,
+        correct: correctIndex
+      };
+    });
+    
+    setTestQuestions(questions);
+  }, []);
+
+  useEffect(() => {
+    if (timeLeft > 0) {
+      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+      return () => clearTimeout(timer);
+    } else {
+      handleSubmit();
+    }
+  }, [timeLeft, handleSubmit]);
+
+  const handleAnswerSelect = (optionIndex) => {
+    setSelectedAnswer(optionIndex);
+  };
+
+  const handleNext = () => {
+    if (selectedAnswer !== null) {
+      setAnswers([...answers, selectedAnswer]);
+      setSelectedAnswer(null);
+      
+      if (currentQuestion < testQuestions.length - 1) {
+        setCurrentQuestion(currentQuestion + 1);
+      } else {
+        handleSubmit();
+      }
     }
   };
 

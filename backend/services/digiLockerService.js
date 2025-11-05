@@ -1,11 +1,7 @@
-// DigiLocker Database Service
-// This service connects to MongoDB database for DigiLocker verification
-
 const DigiLocker = require('../models/DigiLocker');
 
 class DigiLockerService {
   
-  // Verify if DigiLocker ID exists in database
   static async verifyDigiLockerID(digilockerID) {
     try {
       const user = await DigiLocker.findOne({ digilockerID: digilockerID });
@@ -23,7 +19,6 @@ class DigiLockerService {
     }
   }
 
-  // Get user data by DigiLocker ID
   static async getUserData(digilockerID) {
     try {
       return await DigiLocker.findOne({ digilockerID: digilockerID });
@@ -33,7 +28,6 @@ class DigiLockerService {
     }
   }
 
-  // Check if user is eligible (18+ years old)
   static checkEligibility(dateOfBirth) {
     const today = new Date();
     const birthDate = new Date(dateOfBirth);
@@ -50,9 +44,7 @@ class DigiLockerService {
     };
   }
 
-  // DigiLocker verification process
   static async simulateVerification(digilockerID) {
-    // Processing delay
     await new Promise(resolve => setTimeout(resolve, 2000));
     
     const verification = await this.verifyDigiLockerID(digilockerID);
@@ -75,7 +67,6 @@ class DigiLockerService {
     };
   }
 
-  // Get all valid DigiLocker IDs
   static async getAllValidIDs() {
     try {
       const digilockers = await DigiLocker.find({}, 'digilockerID').sort({ digilockerID: 1 });
@@ -86,7 +77,6 @@ class DigiLockerService {
     }
   }
 
-  // Get all DigiLocker records (for admin purposes)
   static async getAllRecords() {
     try {
       return await DigiLocker.find({}).sort({ digilockerID: 1 });

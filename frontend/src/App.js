@@ -7,8 +7,16 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userSession, setUserSession] = useState(null);
 
-  const handleLoginSuccess = (sessionData) => {
-    console.log('Login successful:', sessionData);
+  const handleLoginSuccess = (loginData) => {
+    console.log('Login Data Received:', loginData);
+    const sessionData = {
+      digiLockerId: loginData.digilockerID,
+      userData: loginData.userData || {},
+      userId: loginData.userId,
+      hasExistingApplication: loginData.hasExistingApplication || false,
+      applicationData: loginData.applicationData || null
+    };
+    console.log('Session Data Set:', sessionData);
     setUserSession(sessionData);
     setIsLoggedIn(true);
   };
