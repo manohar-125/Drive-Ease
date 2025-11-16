@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './Login.css';
 
 const Login = ({ onLoginSuccess }) => {
+  const navigate = useNavigate();
   const [mode, setMode] = useState('login');
   const [formData, setFormData] = useState({
     password: '',
@@ -286,6 +288,15 @@ const Login = ({ onLoginSuccess }) => {
                   className="btn-secondary"
                 >
                   Register Now
+                </button>
+              </div>
+
+              <div className="supervisor-login-link">
+                <button 
+                  onClick={() => navigate('/supervisor/login')} 
+                  className="btn-supervisor"
+                >
+                  Login as RTO Officer
                 </button>
               </div>
             </>

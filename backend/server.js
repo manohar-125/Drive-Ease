@@ -16,6 +16,7 @@ app.use('/api/test-images', express.static(path.join(__dirname, 'data/sign board
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/applications', require('./routes/applicationRoutes'));
 app.use('/api/learner-test', require('./routes/learnerTestRoutes'));
+app.use('/api/supervisor', require('./routes/supervisorRoutes'));
 
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/drive-ease', {
   useNewUrlParser: true,

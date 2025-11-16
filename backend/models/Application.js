@@ -220,6 +220,47 @@ const ApplicationSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  roadTestStatus: {
+    type: String,
+    enum: ['scheduled', 'verified', 'evaluated', 'passed', 'failed'],
+    default: undefined
+  },
+  verificationOTP: {
+    type: String,
+    default: null
+  },
+  otpExpiry: {
+    type: Date,
+    default: null
+  },
+  verifiedAt: {
+    type: Date,
+    default: null
+  },
+  verificationPhoto: {
+    type: String,
+    default: null
+  },
+  roadTestScore: {
+    type: Number,
+    default: null
+  },
+  roadTestEvaluationQuestions: [{
+    question: String,
+    rating: Number
+  }],
+  roadTestEvaluated: {
+    type: Boolean,
+    default: false
+  },
+  roadTestEvaluatedAt: {
+    type: Date,
+    default: null
+  },
+  roadTestPassed: {
+    type: Boolean,
+    default: null
+  },
   
   learnerLicenseDownloaded: {
     type: Boolean,

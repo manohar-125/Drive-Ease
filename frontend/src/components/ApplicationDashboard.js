@@ -31,7 +31,11 @@ const ApplicationDashboard = ({ userSession, onLogout }) => {
     learnerTestAttempts: 0,
     learnerLicenseNumber: null,
     roadTestDate: null,
-    roadTestSlot: null
+    roadTestSlot: null,
+    roadTestStatus: null,
+    roadTestPassed: null,
+    roadTestScore: null,
+    verificationPhoto: null
   });
   
   const [paymentCompleted, setPaymentCompleted] = useState(false);
@@ -71,7 +75,11 @@ const ApplicationDashboard = ({ userSession, onLogout }) => {
           learnerTestAttempts: appData.learnerTestAttempts || 0,
           learnerLicenseNumber: appData.learnerLicenseNumber || null,
           roadTestDate: appData.roadTestDate || null,
-          roadTestSlot: appData.roadTestSlot || null
+          roadTestSlot: appData.roadTestSlot || null,
+          roadTestStatus: appData.roadTestStatus || null,
+          roadTestPassed: appData.roadTestPassed !== null ? appData.roadTestPassed : null,
+          roadTestScore: appData.roadTestScore || null,
+          verificationPhoto: appData.verificationPhoto || null
         });
         
         setApplicationNumber(appData.applicationNumber || '');
@@ -109,6 +117,12 @@ const ApplicationDashboard = ({ userSession, onLogout }) => {
         }
         if (appData.roadTestDate && appData.roadTestSlot) {
           calculatedProgress = 70;
+        }
+        if (appData.roadTestPassed === true) {
+          calculatedProgress = 100;
+          completed.push(5);
+        } else if (appData.roadTestPassed === false) {
+          calculatedProgress = 75;
         }
         setProgress(calculatedProgress);
         
@@ -381,6 +395,13 @@ const ApplicationDashboard = ({ userSession, onLogout }) => {
     );
   };
 
+  const handleDownloadDrivingLicense = () => {
+    window.open(
+      `http://localhost:5001/api/learner-test/download-driving-license/${applicationNumber}`,
+      '_blank'
+    );
+  };
+
   return (
     <div className={`dashboard-container ${showColorTest || showRoadTestApplication ? 'test-active' : ''}`}>
       {showColorInstructions && (
@@ -534,11 +555,33 @@ const ApplicationDashboard = ({ userSession, onLogout }) => {
                 })}
               </div>
 
+              {/* Road Test Result Section */}
+              {(formData.roadTestPassed === true || formData.roadTestPassed === false) && (
+                <div className="road-test-result-section">
+                  <div className={`result-card ${formData.roadTestPassed ? 'passed' : 'failed'}`}>
+                    <div className="result-icon">
+                      {formData.roadTestPassed ? '🎉' : '😔'}
+                    </div>
+                    <div className="result-info-text">
+                      <h3>Road Test {formData.roadTestPassed ? 'PASSED' : 'FAILED'}</h3>
+                      {formData.roadTestScore !== null && formData.roadTestScore !== undefined && (
+                        <p className="result-score">Score: {formData.roadTestScore}/50</p>
+                      )}
+                      {formData.roadTestPassed ? (
+                        <p>Congratulations! You have successfully passed the road test.</p>
+                      ) : (
+                        <p>Unfortunately, you did not pass this time. Please practice more and try again.</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Download Learner License Button */}
               {formData.learnerTestStatus === 'passed' && formData.learnerLicenseNumber && (
                 <div className="license-download-section">
                   <div className="license-card">
-                    <div className="license-icon">Learner's License</div>
+                    <div className="license-icon">📜 Learner's License</div>
                     <div className="license-info-text">
                       <h3>Click on "Get License" to Download Your Learner's License</h3>
                       <p>License Number: <strong>{formData.learnerLicenseNumber}</strong></p>
@@ -546,6 +589,25 @@ const ApplicationDashboard = ({ userSession, onLogout }) => {
                     </div>
                     <button onClick={handleDownloadLicense} className="download-license-btn">
                       Get License 
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Download Driving License Button */}
+              {formData.roadTestPassed === true && (
+                <div className="license-download-section">
+                  <div className="license-card driving-license">
+                    <div className="license-icon">🚗 Driving License</div>
+                    <div className="license-info-text">
+                      <h3>Congratulations! Download Your Full Driving License</h3>
+                      <p>You have successfully completed all tests</p>
+                      {formData.roadTestScore && (
+                        <p className="license-score">Road Test Score: {formData.roadTestScore}/50</p>
+                      )}
+                    </div>
+                    <button onClick={handleDownloadDrivingLicense} className="download-license-btn driving">
+                      Get Driving License 🎊
                     </button>
                   </div>
                 </div>

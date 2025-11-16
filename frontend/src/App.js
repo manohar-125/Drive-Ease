@@ -5,6 +5,10 @@ import ApplicationDashboard from './components/ApplicationDashboard';
 import LearnerTestInstructions from './components/LearnerTestInstructions';
 import LearnerTest from './components/LearnerTest';
 import TestResult from './components/TestResult';
+import SupervisorLogin from './components/SupervisorLogin';
+import SupervisorDashboard from './components/SupervisorDashboard';
+import CandidateVerification from './components/CandidateVerification';
+import RoadTestEvaluation from './components/RoadTestEvaluation';
 import './App.css';
 
 function App() {
@@ -101,6 +105,27 @@ function App() {
               <Navigate to="/" replace />
             )
           } 
+        />
+        
+        {/* Supervisor Routes */}
+        <Route 
+          path="/supervisor/login" 
+          element={<SupervisorLogin />} 
+        />
+        
+        <Route 
+          path="/supervisor/dashboard" 
+          element={<SupervisorDashboard />} 
+        />
+        
+        <Route 
+          path="/supervisor/verify/:applicationNumber" 
+          element={<CandidateVerification />} 
+        />
+        
+        <Route 
+          path="/supervisor/evaluate/:applicationNumber" 
+          element={<RoadTestEvaluation />} 
         />
         
         <Route path="*" element={<Navigate to="/" replace />} />

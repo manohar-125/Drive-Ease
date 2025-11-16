@@ -1328,3 +1328,118 @@
   font-weight: 500;
 }
 
+/* Road Test Result Section */
+.road-test-result-section {
+  margin-top: 30px;
+  padding: 20px;
+  animation: fadeInScale 0.5s ease-out;
+}
+
+.result-card {
+  border-radius: 15px;
+  padding: 30px;
+  display: flex;
+  align-items: center;
+  gap: 25px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  color: white;
+  animation: slideIn 0.5s ease;
+}
+
+.result-card.passed {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+}
+
+.result-card.failed {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3);
+}
+
+.result-icon {
+  font-size: 48px;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 20px;
+  border-radius: 12px;
+  animation: bounce 2s infinite;
+}
+
+.result-info-text {
+  flex: 1;
+}
+
+.result-info-text h3 {
+  margin: 0 0 10px 0;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.result-info-text p {
+  margin: 5px 0;
+  font-size: 16px;
+  opacity: 0.95;
+}
+
+.result-score {
+  font-size: 15px;
+  opacity: 0.9;
+  font-weight: 600;
+}
+
+/* Driving License Card */
+.driving-license {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border-radius: 15px;
+  padding: 30px;
+  display: flex;
+  align-items: center;
+  gap: 25px;
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+  color: white;
+  animation: slideIn 0.5s ease 0.2s backwards;
+  margin-top: 20px;
+}
+
+.driving-license .license-icon {
+  font-size: 24px;
+  font-weight: bold;
+  background: rgba(255, 255, 255, 0.3);
+  padding: 15px 25px;
+  border-radius: 8px;
+  animation: bounce 2s infinite;
+}
+
+.driving-license .license-info-text {
+  flex: 1;
+}
+
+.driving-license .license-info-text h3 {
+  margin: 0 0 10px 0;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.driving-license .license-info-text p {
+  margin: 5px 0;
+  font-size: 16px;
+  opacity: 0.95;
+}
+
+.driving-license .download-license-btn {
+  padding: 15px 30px;
+  background: white;
+  color: #3b82f6;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.driving-license .download-license-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+}
+

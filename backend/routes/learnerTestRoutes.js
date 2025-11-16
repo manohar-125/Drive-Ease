@@ -480,4 +480,220 @@ router.get('/download-license/:applicationNumber', async (req, res) => {
   }
 });
 
+// GET /api/learner-test/download-driving-license/:applicationNumber
+// Download full driving license PDF (after passing road test)
+router.get('/download-driving-license/:applicationNumber', async (req, res) => {
+  try {
+    const { applicationNumber } = req.params;
+    
+    const application = await Application.findOne({ applicationNumber });
+    
+    if (!application) {
+      return res.status(404).json({ message: 'Application not found' });
+    }
+    
+    if (!application.roadTestPassed) {
+      return res.status(403).json({ message: 'Road test not passed yet' });
+    }
+    
+    // Create PDF document
+    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    
+    // Set response headers
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=driving-license-${applicationNumber}.pdf`);
+    
+    // Pipe PDF to response
+    doc.pipe(res);
+    
+    // Draw border
+    doc.rect(30, 30, 535, 750).stroke();
+    
+    // Add header with logo/title
+    doc.fontSize(28).font('Helvetica-Bold').fillColor('#1a5490')
+       .text("DRIVING LICENSE", 50, 60, { align: 'center' });
+    
+    doc.fontSize(12).font('Helvetica').fillColor('#666666')
+       .text('GOVERNMENT OF INDIA', 50, 100, { align: 'center' });
+    
+    // Draw separator line
+    doc.moveTo(50, 125).lineTo(545, 125).stroke();
+    
+    // Add applicant photo (verification photo, photoData, or photoPath)
+    let photoAdded = false;
+    try {
+      let imageBuffer = null;
+      
+      // Try verification photo first (from road test verification)
+      if (application.verificationPhoto) {
+        const base64Data = application.verificationPhoto.replace(/^data:image\/\w+;base64,/, '');
+        imageBuffer = Buffer.from(base64Data, 'base64');
+      } 
+      // Try photoData (Base64 from application)
+      else if (application.photoData) {
+        const base64Data = application.photoData.replace(/^data:image\/\w+;base64,/, '');
+        imageBuffer = Buffer.from(base64Data, 'base64');
+      }
+      // Try photoPath (file path from uploads)
+      else if (application.photoPath) {
+        const photoAbsolute = path.join(__dirname, '../', application.photoPath);
+        try { 
+          imageBuffer = await fs.readFile(photoAbsolute); 
+        } catch (fErr) { 
+          console.error('Photo file read error:', fErr.message); 
+        }
+      }
+      
+      if (imageBuffer) {
+        doc.rect(440, 145, 110, 130).stroke();
+        doc.image(imageBuffer, 445, 150, { width: 100, height: 120, fit: [100, 120] });
+        photoAdded = true;
+      }
+    } catch (photoError) {
+      console.error('Error processing photo for PDF:', photoError.message);
+    }
+    
+    if (!photoAdded) {
+      doc.rect(440, 145, 110, 130).stroke();
+      doc.fontSize(10).fillColor('#999999').text('No Photo', 460, 205);
+    }
+    
+    // Reset position and color for content
+    doc.fillColor('#000000');
+    let yPosition = 155;
+    
+    // License Details Section
+    doc.fontSize(14).font('Helvetica-Bold').fillColor('#1a5490')
+       .text('License Information', 50, yPosition);
+    yPosition += 25;
+    
+    doc.fontSize(11).font('Helvetica').fillColor('#000000');
+    
+    // Generate driving license number from learner license number
+    const drivingLicenseNumber = application.learnerLicenseNumber 
+      ? application.learnerLicenseNumber.replace('LL', 'DL')
+      : `DL${new Date().getFullYear()}${application.applicationNumber.slice(-4)}`;
+    
+    doc.text('License Number:', 50, yPosition, { continued: true })
+       .font('Helvetica-Bold').text(` ${drivingLicenseNumber}`);
+    yPosition += 20;
+    
+    const issueDate = new Date().toLocaleDateString('en-IN');
+    doc.font('Helvetica').text('Issue Date:', 50, yPosition, { continued: true })
+       .font('Helvetica-Bold').text(` ${issueDate}`);
+    yPosition += 20;
+    
+    // Driving license valid for 20 years
+    const expiryDate = new Date();
+    expiryDate.setFullYear(expiryDate.getFullYear() + 20);
+    doc.font('Helvetica').text('Expiry Date:', 50, yPosition, { continued: true })
+       .font('Helvetica-Bold').text(` ${expiryDate.toLocaleDateString('en-IN')}`);
+    yPosition += 35;
+    
+    // Personal Details Section
+    doc.fontSize(14).font('Helvetica-Bold').fillColor('#1a5490')
+       .text('Personal Information', 50, yPosition);
+    yPosition += 25;
+    
+    doc.fontSize(11).font('Helvetica').fillColor('#000000');
+    doc.text('Name:', 50, yPosition, { continued: true })
+       .font('Helvetica-Bold').text(` ${application.fullName}`);
+    yPosition += 20;
+    
+    doc.font('Helvetica').text("Father's Name:", 50, yPosition, { continued: true })
+       .font('Helvetica-Bold').text(` ${application.fatherName || 'N/A'}`);
+    yPosition += 20;
+    
+    const dob = application.dateOfBirth 
+      ? new Date(application.dateOfBirth).toLocaleDateString('en-IN')
+      : 'N/A';
+    doc.font('Helvetica').text('Date of Birth:', 50, yPosition, { continued: true })
+       .font('Helvetica-Bold').text(` ${dob}`);
+    yPosition += 20;
+    
+    doc.font('Helvetica').text('Gender:', 50, yPosition, { continued: true })
+       .font('Helvetica-Bold').text(` ${application.gender || 'N/A'}`);
+    yPosition += 35;
+    
+    // Address Section
+    doc.fontSize(14).font('Helvetica-Bold').fillColor('#1a5490')
+       .text('Address', 50, yPosition);
+    yPosition += 25;
+    
+    doc.fontSize(11).font('Helvetica').fillColor('#000000');
+    const safeAddress = application.address || 'Address Not Available';
+    doc.text(safeAddress, 50, yPosition, { width: 380 });
+    yPosition += 40;
+    
+    const locationLine = `${application.district || 'District N/A'}, ${application.state || 'State N/A'} - ${application.pincode || 'PIN N/A'}`;
+    doc.text(locationLine, 50, yPosition);
+    yPosition += 35;
+    
+    // Vehicle Class Section
+    doc.fontSize(14).font('Helvetica-Bold').fillColor('#1a5490')
+       .text('Vehicle Class', 50, yPosition);
+    yPosition += 25;
+    
+    doc.fontSize(11).font('Helvetica-Bold').fillColor('#000000');
+    doc.text(application.applicationType || 'Not specified', 50, yPosition);
+    yPosition += 35;
+    
+    // Test Results Section
+    doc.fontSize(14).font('Helvetica-Bold').fillColor('#1a5490')
+       .text('Test Results', 50, yPosition);
+    yPosition += 25;
+    
+    doc.fontSize(11).font('Helvetica').fillColor('#000000');
+    
+    // Color Vision Test
+    doc.text('Color Vision Test:', 50, yPosition, { continued: true })
+       .font('Helvetica-Bold').fillColor('#10b981').text(' PASSED');
+    yPosition += 20;
+    
+    // Learner Test
+    const learnerScore = application.learnerTestScore || 'N/A';
+    doc.fillColor('#000000').font('Helvetica').text('Learner Test:', 50, yPosition, { continued: true })
+       .font('Helvetica-Bold').fillColor('#10b981').text(` PASSED (${learnerScore}/30)`);
+    yPosition += 20;
+    
+    // Road Test
+    const roadTestScore = application.roadTestScore || 'N/A';
+    doc.fillColor('#000000').font('Helvetica').text('Road Test:', 50, yPosition, { continued: true })
+       .font('Helvetica-Bold').fillColor('#10b981').text(` PASSED (${roadTestScore}/50)`);
+    yPosition += 20;
+    
+    const verifiedDate = application.verifiedAt 
+      ? new Date(application.verifiedAt).toLocaleDateString('en-IN')
+      : 'N/A';
+    doc.fillColor('#000000').font('Helvetica').text('Verification Date:', 50, yPosition, { continued: true })
+       .font('Helvetica-Bold').text(` ${verifiedDate}`);
+    
+    // Footer section
+    doc.moveTo(50, 700).lineTo(545, 700).stroke();
+    
+    doc.fontSize(9).font('Helvetica-Oblique').fillColor('#666666');
+    doc.text('This is a computer-generated full driving license. Valid for 20 years from the date of issue.', 
+             50, 710, { align: 'center', width: 495 });
+    doc.text('This license permits you to drive the specified vehicle class on public roads.', 
+             50, 725, { align: 'center', width: 495 });
+    
+    doc.fontSize(8).text(`Downloaded on: ${new Date().toLocaleDateString('en-IN')}`, 
+                        50, 750, { align: 'center', width: 495 });
+    
+    // Finalize PDF
+    doc.end();
+    
+    // Update download status
+    application.drivingLicenseDownloaded = true;
+    application.drivingLicenseDownloadDate = new Date();
+    await application.save({ validateBeforeSave: false });
+    
+  } catch (error) {
+    console.error('Error generating driving license PDF:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ message: 'Error generating driving license PDF', error: error.message });
+    }
+  }
+});
+
 module.exports = router;
