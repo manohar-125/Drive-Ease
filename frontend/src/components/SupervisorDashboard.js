@@ -92,14 +92,13 @@ const SupervisorDashboard = () => {
           <div className="logo-section">
             <span className="logo-icon">👮</span>
             <div>
-              <h1>Supervisor Portal</h1>
+              <h1>RTO Officer</h1>
               <p>Road Test Verification Dashboard</p>
             </div>
           </div>
           <div className="user-section">
             <div className="user-info">
               <span className="user-name">{supervisorData?.name || 'RTO Officer'}</span>
-              <span className="user-role">{supervisorData?.role || 'Supervisor'}</span>
             </div>
             <button onClick={handleLogout} className="logout-btn">
               Logout
@@ -191,7 +190,7 @@ const SupervisorDashboard = () => {
                   </div>
                   <div className="info-row">
                     <span className="info-label">📞 Phone:</span>
-                    <span className="info-value">{candidate.phoneNumber}</span>
+                    <span className="info-value">{candidate.phoneNumber || candidate.phone || 'N/A'}</span>
                   </div>
                   <div className="info-row">
                     <span className="info-label">✉️ Email:</span>

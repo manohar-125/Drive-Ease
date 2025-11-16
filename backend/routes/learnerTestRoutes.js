@@ -243,7 +243,7 @@ router.post('/submit', async (req, res) => {
       attemptNumber: application.learnerTestAttempts,
       licenseNumber: passed ? updateData.learnerLicenseNumber : null,
       message: passed 
-        ? 'Congratulations! You have passed the learner test.' 
+        ? 'Congratulations! You have passed the learner\'s license test.' 
         : 'You did not pass. Please try again from the dashboard.'
     });
     

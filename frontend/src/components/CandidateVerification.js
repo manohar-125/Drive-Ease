@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import './CandidateVerification.css';
+import ConfirmationModal from './ConfirmationModal';
 
 const CandidateVerification = () => {
   const { applicationNumber } = useParams();
@@ -18,36 +19,35 @@ const CandidateVerification = () => {
     left: null,
     right: null
   });
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [confirmationData, setConfirmationData] = useState(null);
   const [currentPhotoType, setCurrentPhotoType] = useState(null);
-  const [cameraActive, setCameraActive] = useState(false);
   const [otp, setOtp] = useState('');
   const [generatedOTP, setGeneratedOTP] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [verifying, setVerifying] = useState(false);
-  const [showCamera, setShowCamera] = useState(false);
 
   useEffect(() => {
-    fetchCandidateDetails();
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get(`http://localhost:5001/api/supervisor/candidate/${applicationNumber}`);
+        if (response.data.success) {
+          setCandidate(response.data.data);
+        }
+      } catch (error) {
+        console.error('Error fetching candidate:', error);
+        alert('Failed to load candidate details');
+        navigate('/supervisor/dashboard');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
     return () => {
       stopCamera();
     };
-  }, [applicationNumber]);
-
-  const fetchCandidateDetails = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get(`http://localhost:5001/api/supervisor/candidate/${applicationNumber}`);
-      if (response.data.success) {
-        setCandidate(response.data.data);
-      }
-    } catch (error) {
-      console.error('Error fetching candidate:', error);
-      alert('Failed to load candidate details');
-      navigate('/supervisor/dashboard');
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [applicationNumber, navigate]);
 
   const startCamera = async () => {
     try {
@@ -56,7 +56,6 @@ const CandidateVerification = () => {
       });
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        setCameraActive(true);
       }
     } catch (error) {
       alert('Camera access denied. Please enable camera permissions.');
@@ -69,7 +68,6 @@ const CandidateVerification = () => {
       const tracks = videoRef.current.srcObject.getTracks();
       tracks.forEach(track => track.stop());
       videoRef.current.srcObject = null;
-      setCameraActive(false);
     }
   };
 
@@ -193,8 +191,12 @@ const CandidateVerification = () => {
       });
 
       if (response.data.success) {
-        alert('Candidate verified successfully! ✓');
-        navigate('/supervisor/dashboard');
+        setConfirmationData({
+          applicationNumber: applicationNumber,
+          fullName: candidate?.fullName || 'N/A',
+          verifiedAt: new Date().toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+        });
+        setShowConfirmation(true);
       }
     } catch (error) {
       alert(error.response?.data?.message || 'Invalid OTP');
@@ -366,11 +368,10 @@ const CandidateVerification = () => {
                 <div className="otp-display">
                   <p>OTP sent to candidate:</p>
                   <div className="otp-code">{generatedOTP}</div>
-                  <p className="otp-note">Ask candidate to tell you the OTP they received</p>
                 </div>
 
                 <div className="otp-input-section">
-                  <label>Enter OTP from Candidate:</label>
+                  <label>Enter OTP from Candidate</label>
                   <input
                     type="text"
                     maxLength="6"
@@ -392,6 +393,16 @@ const CandidateVerification = () => {
           </div>
         )}
       </div>
+
+      <ConfirmationModal
+        isOpen={showConfirmation}
+        onClose={() => {
+          setShowConfirmation(false);
+          navigate('/supervisor/dashboard');
+        }}
+        type="verification"
+        data={confirmationData}
+      />
     </div>
   );
 };

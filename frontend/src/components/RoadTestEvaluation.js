@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import './RoadTestEvaluation.css';
+import ConfirmationModal from './ConfirmationModal';
 
 const RoadTestEvaluation = () => {
   const { applicationNumber } = useParams();
@@ -10,6 +11,8 @@ const RoadTestEvaluation = () => {
   const [candidate, setCandidate] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [confirmationData, setConfirmationData] = useState(null);
   
   const evaluationQuestions = [
     { id: 1, question: 'Vehicle Control and Handling', description: 'Ability to control vehicle smoothly' },
@@ -27,30 +30,29 @@ const RoadTestEvaluation = () => {
   const [ratings, setRatings] = useState({});
 
   useEffect(() => {
-    fetchCandidateDetails();
-  }, [applicationNumber]);
-
-  const fetchCandidateDetails = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get(`http://localhost:5001/api/supervisor/candidate/${applicationNumber}`);
-      if (response.data.success) {
-        setCandidate(response.data.data);
-        
-        // Check if candidate is verified
-        if (response.data.data.roadTestStatus !== 'verified') {
-          alert('Candidate must be verified before evaluation');
-          navigate('/supervisor/dashboard');
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get(`http://localhost:5001/api/supervisor/candidate/${applicationNumber}`);
+        if (response.data.success) {
+          setCandidate(response.data.data);
+          
+          // Check if candidate is verified
+          if (response.data.data.roadTestStatus !== 'verified') {
+            alert('Candidate must be verified before evaluation');
+            navigate('/supervisor/dashboard');
+          }
         }
+      } catch (error) {
+        console.error('Error fetching candidate:', error);
+        alert('Failed to load candidate details');
+        navigate('/supervisor/dashboard');
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Error fetching candidate:', error);
-      alert('Failed to load candidate details');
-      navigate('/supervisor/dashboard');
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+    fetchData();
+  }, [applicationNumber, navigate]);
 
   const handleRatingChange = (questionId, rating) => {
     setRatings({
@@ -106,14 +108,15 @@ const RoadTestEvaluation = () => {
       });
 
       if (response.data.success) {
-        alert(
-          `Evaluation Submitted Successfully!\n\n` +
-          `${response.data.data.fullName}\n` +
-          `Score: ${response.data.data.totalScore}/${response.data.data.maxScore}\n` +
-          `Percentage: ${response.data.data.percentage}%\n\n` +
-          `Result: ${response.data.data.passed ? '✅ PASSED' : '❌ FAILED'}`
-        );
-        navigate('/supervisor/dashboard');
+        setConfirmationData({
+          applicationNumber: applicationNumber,
+          fullName: response.data.data.fullName,
+          score: response.data.data.totalScore,
+          maxScore: response.data.data.maxScore,
+          percentage: response.data.data.percentage,
+          passed: response.data.data.passed
+        });
+        setShowConfirmation(true);
       }
     } catch (error) {
       alert(error.response?.data?.message || 'Failed to submit evaluation');
@@ -240,6 +243,16 @@ const RoadTestEvaluation = () => {
           </button>
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={showConfirmation}
+        onClose={() => {
+          setShowConfirmation(false);
+          navigate('/supervisor/dashboard');
+        }}
+        type="evaluation"
+        data={confirmationData}
+      />
     </div>
   );
 };

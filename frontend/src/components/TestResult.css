@@ -1,24 +1,26 @@
 .test-result-container {
   min-height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 40px 20px;
+  padding: 20px;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: center; /* vertical centering */
+  justify-content: center; /* horizontal centering */
+  box-sizing: border-box;
 }
 
 .result-card {
   background: white;
-  border-radius: 20px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-  max-width: 900px;
+  border-radius: 22px;
+  box-shadow: 0 16px 46px rgba(0, 0, 0, 0.25);
+  max-width: 960px;
   width: 100%;
   overflow: hidden;
+  position: relative; /* allow absolute dashboard button */
 }
 
 /* Result Header */
 .result-header {
-  padding: 40px;
+  padding: 48px 60px 38px 60px;
   text-align: center;
   color: white;
 }
@@ -67,7 +69,7 @@
 
 /* Score Section */
 .score-section {
-  padding: 40px;
+  padding: 50px 60px 50px 60px;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 40px;
@@ -125,6 +127,7 @@
   padding: 12px;
   background: #f8f9fa;
   border-radius: 8px;
+  width: 180px;
 }
 
 .detail-label {
@@ -324,10 +327,41 @@
 
 /* Action Buttons */
 .action-buttons {
-  padding: 40px;
+  padding: 48px 60px 60px 60px;
   display: flex;
   gap: 20px;
   justify-content: center;
+}
+
+/* Top Dashboard Button */
+.btn-top-dashboard {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  padding: 10px 22px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(102, 126, 234, 0.35);
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-top-dashboard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+}
+
+@media (max-width: 1000px) {
+  .result-header { padding: 42px 40px 30px 40px; }
+  .score-section { padding: 40px 40px; }
+  .action-buttons { padding: 40px 40px 50px 40px; }
 }
 
 .btn-download, .btn-dashboard, .btn-retry {
@@ -393,6 +427,11 @@
 
 /* Responsive Design */
 @media (max-width: 768px) {
+  .result-card { border-radius: 18px; }
+  .result-header { padding: 38px 28px 30px 28px; }
+  .score-section { padding: 35px 28px; }
+  .action-buttons { padding: 35px 28px 45px 28px; }
+  .btn-top-dashboard { top: 14px; right: 14px; padding: 8px 18px; font-size: 13px; }
   .score-section {
     grid-template-columns: 1fr;
     gap: 30px;

@@ -73,7 +73,7 @@ router.get('/today-candidates', async (req, res) => {
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     // Find all applications scheduled for today
-    const candidates = await Application.find({
+      const candidates = await Application.find({
       roadTestDate: {
         $gte: today,
         $lt: tomorrow
@@ -91,7 +91,7 @@ router.get('/today-candidates', async (req, res) => {
       photoPath: candidate.photoPath,
       photoData: candidate.photoData,
       learnerTestPhoto: candidate.learnerTestPhoto,
-      phoneNumber: candidate.phoneNumber,
+        phoneNumber: candidate.phone,
       email: candidate.email,
       digilockerData: candidate.digilocker
     }));
@@ -135,7 +135,7 @@ router.get('/candidate/:applicationNumber', async (req, res) => {
         photoPath: candidate.photoPath,
         photoData: candidate.photoData,
         learnerTestPhoto: candidate.learnerTestPhoto,
-        phoneNumber: candidate.phoneNumber,
+          phoneNumber: candidate.phone,
         email: candidate.email,
         digilockerData: candidate.digilocker
       }
@@ -222,7 +222,7 @@ router.post('/send-otp', async (req, res) => {
       success: true,
       message: 'OTP sent to candidate',
       otp: otp, // Display on screen for demo
-      phoneNumber: candidate.phoneNumber
+        phoneNumber: candidate.phone
     });
   } catch (error) {
     console.error('Error sending OTP:', error);
@@ -307,7 +307,7 @@ router.get('/verified-candidates', async (req, res) => {
     const candidates = await Application.find({
       roadTestStatus: 'verified',
       learnerTestStatus: 'passed'
-    }).select('applicationNumber fullName roadTestDate roadTestSlot roadTestStatus phoneNumber email verifiedAt');
+    }).select('applicationNumber fullName roadTestDate roadTestSlot roadTestStatus phone email verifiedAt');
 
     const formattedCandidates = candidates.map(candidate => ({
       applicationNumber: candidate.applicationNumber,
@@ -315,7 +315,8 @@ router.get('/verified-candidates', async (req, res) => {
       roadTestDate: candidate.roadTestDate,
       roadTestSlot: candidate.roadTestSlot,
       roadTestStatus: candidate.roadTestStatus,
-      phoneNumber: candidate.phoneNumber,
+      // Provide phoneNumber alias expected by frontend
+        phoneNumber: candidate.phone,
       email: candidate.email,
       verifiedAt: candidate.verifiedAt
     }));
@@ -418,7 +419,7 @@ router.get('/all-road-test-candidates', async (req, res) => {
     const candidates = await Application.find({
       roadTestDate: { $exists: true, $ne: null },
       learnerTestStatus: 'passed'
-    }).select('applicationNumber fullName roadTestDate roadTestSlot roadTestStatus phoneNumber email verifiedAt roadTestScore roadTestPassed');
+    }).select('applicationNumber fullName roadTestDate roadTestSlot roadTestStatus phone email verifiedAt roadTestScore roadTestPassed');
 
     const formattedCandidates = candidates.map(candidate => ({
       applicationNumber: candidate.applicationNumber,
@@ -426,7 +427,8 @@ router.get('/all-road-test-candidates', async (req, res) => {
       roadTestDate: candidate.roadTestDate,
       roadTestSlot: candidate.roadTestSlot,
       roadTestStatus: candidate.roadTestStatus || 'scheduled',
-      phoneNumber: candidate.phoneNumber,
+      // Provide phoneNumber alias expected by frontend
+        phoneNumber: candidate.phone,
       email: candidate.email,
       verifiedAt: candidate.verifiedAt,
       roadTestScore: candidate.roadTestScore,

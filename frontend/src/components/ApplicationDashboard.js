@@ -6,6 +6,7 @@ import TestDateSelector from './TestDateSelector';
 import ColorVisionTest from './ColorVisionTest';
 import ColorVisionTestInstructions from './ColorVisionTestInstructions';
 import RoadTestApplication from './RoadTestApplication';
+import ConfirmationModal from './ConfirmationModal';
 
 const ApplicationDashboard = ({ userSession, onLogout }) => {
   const navigate = useNavigate();
@@ -16,6 +17,7 @@ const ApplicationDashboard = ({ userSession, onLogout }) => {
   const [showColorInstructions, setShowColorInstructions] = useState(false);
   const [showRoadTestApplication, setShowRoadTestApplication] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [hasShownResultModal, setHasShownResultModal] = useState(false);
   
   const userData = userSession?.userData || {};
   const digiLockerId = userSession?.digiLockerId || '';
@@ -35,16 +37,17 @@ const ApplicationDashboard = ({ userSession, onLogout }) => {
     roadTestStatus: null,
     roadTestPassed: null,
     roadTestScore: null,
-    verificationPhoto: null
+    verificationPhoto: null,
+    applicationType: ''
   });
   
   const [paymentCompleted, setPaymentCompleted] = useState(false);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [paymentReference, setPaymentReference] = useState('');
-  const [paymentAmount, setPaymentAmount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [applicationNumber, setApplicationNumber] = useState('');
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [confirmationType, setConfirmationType] = useState('');
+  const [confirmationData, setConfirmationData] = useState(null);
 
   // Load initial data and refresh when returning from test
   useEffect(() => {
@@ -79,7 +82,8 @@ const ApplicationDashboard = ({ userSession, onLogout }) => {
           roadTestStatus: appData.roadTestStatus || null,
           roadTestPassed: appData.roadTestPassed !== null ? appData.roadTestPassed : null,
           roadTestScore: appData.roadTestScore || null,
-          verificationPhoto: appData.verificationPhoto || null
+          verificationPhoto: appData.verificationPhoto || null,
+          applicationType: appData.applicationType || userSession?.applicationData?.applicationType || ''
         });
         
         setApplicationNumber(appData.applicationNumber || '');
@@ -145,6 +149,22 @@ const ApplicationDashboard = ({ userSession, onLogout }) => {
     }
   };
 
+  // Show evaluation result modal when roadTestPassed changes
+  useEffect(() => {
+    if (!hasShownResultModal && (formData.roadTestPassed === true || formData.roadTestPassed === false)) {
+      setConfirmationData({
+        applicationNumber: applicationNumber,
+        testDate: formData.roadTestDate ? new Date(formData.roadTestDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A',
+        score: formData.roadTestScore || 0,
+        percentage: formData.roadTestScore ? Math.round((formData.roadTestScore / 50) * 100) : 0,
+        passed: formData.roadTestPassed
+      });
+      setConfirmationType('evaluationResult');
+      setShowConfirmation(true);
+      setHasShownResultModal(true);
+    }
+  }, [formData.roadTestPassed, formData.roadTestDate, formData.roadTestScore, applicationNumber, hasShownResultModal]);
+
   const calculatePaymentAmount = (vehicleType) => {
     const amounts = {
       'Two Wheeler': 500,
@@ -188,13 +208,11 @@ const ApplicationDashboard = ({ userSession, onLogout }) => {
       if (bookingResponse.data.success) {
         const vehicleType = userSession?.applicationData?.applicationType || 'Two Wheeler';
         const amount = calculatePaymentAmount(vehicleType);
-        setPaymentAmount(amount);
         
         const paymentReferenceNumber = 'PAY' + Date.now() + Math.floor(Math.random() * 1000);
-        setPaymentReference(paymentReferenceNumber);
         
         try {
-          const paymentResponse = await axios.post('http://localhost:5001/api/applications/complete-payment', {
+          await axios.post('http://localhost:5001/api/applications/complete-payment', {
             digilocker: digiLockerId,
             paymentReference: paymentReferenceNumber,
             amount: amount
@@ -205,7 +223,16 @@ const ApplicationDashboard = ({ userSession, onLogout }) => {
           return; // Don't show success modal if payment failed
         }
         
-        setShowPaymentModal(true);
+        setConfirmationData({
+          applicationNumber: applicationNumber,
+          colorTestDate: new Date(formData.colorTestDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+          learnerTestDate: new Date(formData.learnerTestDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+          paymentReference: paymentReferenceNumber,
+          amountPaid: amount,
+          applicationType: vehicleType
+        });
+        setConfirmationType('payment');
+        setShowConfirmation(true);
         setProgress(20);
         completeCurrentStep(1);
       }
@@ -263,7 +290,12 @@ const ApplicationDashboard = ({ userSession, onLogout }) => {
         console.error('Error refreshing application data:', error);
       }
       
-      alert(`Congratulations! Test Passed. Score: ${result.score.toFixed(1)}%`);
+      setConfirmationData({
+        applicationNumber: applicationNumber,
+        testDate: new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+      });
+      setConfirmationType('colorTest');
+      setShowConfirmation(true);
     } else {
       alert(`Test Failed. Score: ${result.score.toFixed(1)}%. You need 70% to pass.`);
     }
@@ -312,7 +344,15 @@ const ApplicationDashboard = ({ userSession, onLogout }) => {
     if (result.success) {
       // Refresh data from backend to get latest state
       await refreshDashboardData();
-      alert(`Road Test Application Submitted!\nDate: ${new Date(result.roadTestDate).toLocaleDateString('en-IN')}\nSlot: ${result.roadTestSlot}`);
+      
+      setConfirmationData({
+        applicationNumber: applicationNumber,
+        roadTestDate: new Date(result.roadTestDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+        roadTestSlot: result.roadTestSlot,
+        applicationType: formData.applicationType || userSession?.applicationData?.applicationType || 'Not specified'
+      });
+      setConfirmationType('roadTestBooking');
+      setShowConfirmation(true);
     }
   };
 
@@ -724,115 +764,84 @@ const ApplicationDashboard = ({ userSession, onLogout }) => {
         </div>
       )}
 
-      {showPaymentModal && (
-        <div className="success-modal">
-          <div className="success-modal-content">
-            <div className="success-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <h3>Booking & Payment Successful!</h3>
-            <p className="success-message">Your test slots have been booked.</p>
-            <div className="payment-details-box">
-              <div className="detail-item">
-                <label>Application Number:</label>
-                <span className="detail-value">{applicationNumber}</span>
-              </div>
-              <div className="detail-item">
-                <label>Color Test Date:</label>
-                <span className="detail-value">
-                  {formData.colorTestDate ? new Date(formData.colorTestDate + 'T00:00:00').toLocaleDateString('en-US', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                  }) : 'Not selected'}
-                </span>
-              </div>
-              <div className="detail-item">
-                <label>Learner Test Date:</label>
-                <span className="detail-value">
-                  {formData.learnerTestDate ? new Date(formData.learnerTestDate + 'T00:00:00').toLocaleDateString('en-US', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                  }) : 'Not selected'}
-                </span>
-              </div>
-              <div className="detail-item">
-                <label>Payment Reference:</label>
-                <span className="detail-value">{paymentReference}</span>
-              </div>
-              <div className="detail-item">
-                <label>Amount Paid:</label>
-                <span className="detail-value">₹{paymentAmount}</span>
-              </div>
-            </div>
-            <button 
-              className="primary-btn" 
-              onClick={async () => {
-                setShowPaymentModal(false);
-                setPaymentCompleted(true);
-                
-                // Reload application data from backend to get updated status
-                try {
-                  const response = await axios.get(`http://localhost:5001/api/applications/user/${digiLockerId}`);
-                  if (response.data.data) {
-                    const appData = response.data.data;
-                    
-                    setFormData({
-                      colorTestDate: appData.colorTestDate || '',
-                      learnerTestDate: appData.learnerTestDate || '',
-                      colorTestPassed: appData.colorVisionTestCompleted || false,
-                      learnerTestPassed: appData.learnerTestCompleted || false,
-                      learnerTestStatus: appData.learnerTestStatus || 'not_taken',
-                      learnerTestScore: appData.learnerTestScore || null,
-                      learnerTestAttempts: appData.learnerTestAttempts || 0,
-                      learnerLicenseNumber: appData.learnerLicenseNumber || null
-                    });
-                    
-                    // Update completed steps based on fresh data
-                    const completed = [];
-                    if (appData.paymentStatus === 'completed' || appData.paymentCompleted) {
-                      completed.push(1);
-                    }
-                    if (appData.colorVisionTestCompleted) {
-                      completed.push(2);
-                    }
-                    if (appData.learnerTestStatus === 'passed') {
-                      completed.push(3);
-                    }
-                    setCompletedSteps(completed);
-                    
-                    let calculatedProgress = 0;
-                    if (appData.paymentStatus === 'completed' || appData.paymentCompleted) {
-                      calculatedProgress = 20;
-                    }
-                    if (appData.colorVisionTestCompleted) {
-                      calculatedProgress = 35;
-                    }
-                    if (appData.learnerTestStatus === 'passed') {
-                      calculatedProgress = 50;
-                    }
-                    setProgress(calculatedProgress);
-                    
-                    const nextIncompleteStep = completed.length < 2 ? completed.length + 1 : 2;
-                    setCurrentStep(nextIncompleteStep);
-                  }
-                } catch (error) {
-                  console.error('Error reloading application data:', error);
-                }
-                
-                setShowDashboard(true);
-              }}
-            >
-              Back to Dashboard
-            </button>
-          </div>
-        </div>
-      )}
+      <ConfirmationModal
+        isOpen={showConfirmation}
+        onClose={async () => {
+          setShowConfirmation(false);
+          setPaymentCompleted(true);
+          
+          // Reload application data from backend to get updated status
+          try {
+            const response = await axios.get(`http://localhost:5001/api/applications/user/${digiLockerId}`);
+            if (response.data.data) {
+              const appData = response.data.data;
+              
+              setFormData({
+                colorTestDate: appData.colorTestDate || '',
+                learnerTestDate: appData.learnerTestDate || '',
+                colorTestPassed: appData.colorVisionTestCompleted || false,
+                learnerTestPassed: appData.learnerTestCompleted || false,
+                learnerTestStatus: appData.learnerTestStatus || 'not_taken',
+                learnerTestScore: appData.learnerTestScore || null,
+                learnerTestAttempts: appData.learnerTestAttempts || 0,
+                learnerLicenseNumber: appData.learnerLicenseNumber || null,
+                roadTestDate: appData.roadTestDate || null,
+                roadTestSlot: appData.roadTestSlot || null,
+                roadTestStatus: appData.roadTestStatus || null,
+                roadTestPassed: appData.roadTestPassed !== null ? appData.roadTestPassed : null,
+                roadTestScore: appData.roadTestScore || null,
+                verificationPhoto: appData.verificationPhoto || null
+              });
+              
+              // Update completed steps based on fresh data
+              const completed = [];
+              if (appData.paymentStatus === 'completed' || appData.paymentCompleted) {
+                completed.push(1);
+              }
+              if (appData.colorVisionTestCompleted) {
+                completed.push(2);
+              }
+              if (appData.learnerTestStatus === 'passed') {
+                completed.push(3);
+              }
+              if (appData.roadTestDate && appData.roadTestSlot) {
+                completed.push(4);
+              }
+              setCompletedSteps(completed);
+              
+              let calculatedProgress = 0;
+              if (appData.paymentStatus === 'completed' || appData.paymentCompleted) {
+                calculatedProgress = 20;
+              }
+              if (appData.colorVisionTestCompleted) {
+                calculatedProgress = 35;
+              }
+              if (appData.learnerTestStatus === 'passed') {
+                calculatedProgress = 50;
+              }
+              if (appData.roadTestDate && appData.roadTestSlot) {
+                calculatedProgress = 70;
+              }
+              if (appData.roadTestPassed === true) {
+                calculatedProgress = 100;
+                completed.push(5);
+              } else if (appData.roadTestPassed === false) {
+                calculatedProgress = 75;
+              }
+              setProgress(calculatedProgress);
+              
+              const nextIncompleteStep = completed.length < 2 ? completed.length + 1 : 2;
+              setCurrentStep(nextIncompleteStep);
+            }
+          } catch (error) {
+            console.error('Error reloading application data:', error);
+          }
+          
+          setShowDashboard(true);
+        }}
+        type={confirmationType}
+        data={confirmationData}
+      />
     </div>
   );
 };

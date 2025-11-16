@@ -2,14 +2,19 @@
   min-height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 40px 20px;
+  display: flex;
+  justify-content: center; /* center horizontally */
+  align-items: flex-start; /* keep top alignment; change to center for vertical centering */
+  box-sizing: border-box;
 }
 
 .instructions-card {
-  max-width: 900px;
+  width: 100%;
+  max-width: 950px; /* slight widen */
   margin: 0 auto;
   background: white;
-  border-radius: 15px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  border-radius: 18px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.25);
   overflow: hidden;
 }
 

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './Login.css';
+import ConfirmationModal from './ConfirmationModal';
 
 const Login = ({ onLoginSuccess }) => {
   const navigate = useNavigate();
@@ -24,6 +25,8 @@ const Login = ({ onLoginSuccess }) => {
   const [digilockerData, setDigilockerData] = useState(null);
   const [otpSent, setOtpSent] = useState(false);
   const [phoneVerified, setPhoneVerified] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [registrationData, setRegistrationData] = useState(null);
 
   const handleInputChange = (e) => {
     setFormData({
@@ -198,24 +201,14 @@ const Login = ({ onLoginSuccess }) => {
       });
 
       if (response.data.success) {
-        alert(`Registration successful!\n\nYour Application Number (Username): ${response.data.data.applicationNumber}\n`);
-        setMode('login');
-        setFormData({
-          password: '',
-          confirmPassword: '',
-          applicationNumber: '',
-          digilockerID: '',
-          email: '',
-          phone: '',
-          address: '',
-          licenseType: '',
-          otp: '',
-          consent: false,
-          photo: null
+        setRegistrationData({
+          applicationNumber: response.data.data.applicationNumber,
+          fullName: response.data.data.fullName,
+          digilockerId: formData.digilockerID,
+          email: formData.email,
+          phone: formData.phone
         });
-        setDigilockerData(null);
-        setPhoneVerified(false);
-        setOtpSent(false);
+        setShowConfirmation(true);
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed');
@@ -539,6 +532,32 @@ const Login = ({ onLoginSuccess }) => {
           )}
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={showConfirmation}
+        onClose={() => {
+          setShowConfirmation(false);
+          setMode('login');
+          setFormData({
+            password: '',
+            confirmPassword: '',
+            applicationNumber: '',
+            digilockerID: '',
+            email: '',
+            phone: '',
+            address: '',
+            licenseType: '',
+            otp: '',
+            consent: false,
+            photo: null
+          });
+          setDigilockerData(null);
+          setPhoneVerified(false);
+          setOtpSent(false);
+        }}
+        type="registration"
+        data={registrationData}
+      />
     </div>
   );
 };

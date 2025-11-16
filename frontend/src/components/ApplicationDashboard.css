@@ -1333,6 +1333,7 @@
   margin-top: 30px;
   padding: 20px;
   animation: fadeInScale 0.5s ease-out;
+  width: 7000px;
 }
 
 .result-card {

@@ -66,6 +66,7 @@ const TestResult = () => {
   return (
     <div className="test-result-container">
       <div className="result-card">
+        <button className="btn-top-dashboard" onClick={handleGoToDashboard} aria-label="Go to Dashboard">Go To Dashboard</button>
         {/* Result Header */}
         <div className={`result-header ${isPassed ? 'passed' : 'failed'}`}>
           <div className="result-icon">
@@ -139,6 +140,10 @@ const TestResult = () => {
           <div className="license-section">
             <div className="license-info">
               <h3>Your Learner License</h3>
+              <div className="license-number" style={{ marginBottom: '15px' }}>
+                <span className="license-label">License Type:</span>
+                <span className="license-value" style={{ letterSpacing: '1px' }}>{result.applicationType || result.licenseType || 'Not specified'}</span>
+              </div>
               <div className="license-number">
                 <span className="license-label">License Number:</span>
                 <span className="license-value">{result.licenseNumber}</span>
