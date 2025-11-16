@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const bcrypt = require('bcrypt');
 const Application = require('../models/Application');
 const DigiLocker = require('../models/DigiLocker');
 const DigiLockerService = require('../services/digilockerService');
@@ -29,8 +30,12 @@ const upload = multer({
 
 router.post('/register', upload.single('photo'), async (req, res) => {
   try {
-    const { password, digilockerID, email, phone, address, licenseType } = req.body;
-    if (!password || !digilockerID || !email || !phone || !address || !licenseType || !req.file) {
+    const { password, digilockerID, email, phone, address, licenseType, photoData } = req.body;
+    
+    // Support both file upload and Base64
+    const hasPhoto = req.file || photoData;
+    
+    if (!password || !digilockerID || !email || !phone || !address || !licenseType || !hasPhoto) {
       return res.status(400).json({
         success: false,
         message: 'All fields including photo are required'
@@ -70,7 +75,8 @@ router.post('/register', upload.single('photo'), async (req, res) => {
       district: digilockerData.city || '',
       pincode: digilockerData.pincode || '',
       applicationType: licenseType,
-      photoPath: req.file.path,
+      photoPath: req.file ? req.file.path : null,
+      photoData: photoData || null, // Store Base64 image
       photoUploaded: true,
       photoUploadDate: new Date(),
       registrationComplete: true,
@@ -107,8 +113,6 @@ router.post('/login', async (req, res) => {
   try {
     const { applicationNumber, password } = req.body;
 
-    console.log('Login attempt:', { applicationNumber, hasPassword: !!password });
-
     if (!applicationNumber || !password) {
       return res.status(400).json({
         success: false,
@@ -117,7 +121,6 @@ router.post('/login', async (req, res) => {
     }
 
     const application = await Application.findOne({ applicationNumber });
-    console.log('Application found:', !!application);
 
     if (!application) {
       return res.status(401).json({
@@ -126,8 +129,7 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    const isMatch = await application.comparePassword(password);
-    console.log('Password match:', isMatch);
+    const isMatch = await bcrypt.compare(password, application.password);
 
     if (!isMatch) {
       return res.status(401).json({

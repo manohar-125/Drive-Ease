@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Login from './components/Login';
 import ApplicationDashboard from './components/ApplicationDashboard';
+import LearnerTestInstructions from './components/LearnerTestInstructions';
+import LearnerTest from './components/LearnerTest';
+import TestResult from './components/TestResult';
 import './App.css';
 
 function App() {
@@ -8,7 +12,6 @@ function App() {
   const [userSession, setUserSession] = useState(null);
 
   const handleLoginSuccess = (loginData) => {
-    console.log('Login Data Received:', loginData);
     const sessionData = {
       digiLockerId: loginData.digilockerID,
       userData: loginData.userData || {},
@@ -16,7 +19,6 @@ function App() {
       hasExistingApplication: loginData.hasExistingApplication || false,
       applicationData: loginData.applicationData || null
     };
-    console.log('Session Data Set:', sessionData);
     setUserSession(sessionData);
     setIsLoggedIn(true);
   };
@@ -28,14 +30,81 @@ function App() {
 
   return (
     <div className="App">
-      {!isLoggedIn ? (
-        <Login onLoginSuccess={handleLoginSuccess} />
-      ) : (
-        <ApplicationDashboard 
-          userSession={userSession}
-          onLogout={handleLogout}
+      <Routes>
+        <Route 
+          path="/" 
+          element={
+            !isLoggedIn ? (
+              <Login onLoginSuccess={handleLoginSuccess} />
+            ) : (
+              <Navigate to="/dashboard" replace />
+            )
+          } 
         />
-      )}
+        
+        <Route 
+          path="/dashboard" 
+          element={
+            isLoggedIn ? (
+              <ApplicationDashboard 
+                userSession={userSession}
+                onLogout={handleLogout}
+              />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          } 
+        />
+        
+        <Route 
+          path="/dashboard/:applicationNumber" 
+          element={
+            isLoggedIn ? (
+              <ApplicationDashboard 
+                userSession={userSession}
+                onLogout={handleLogout}
+              />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          } 
+        />
+        
+        <Route 
+          path="/learner-test-instructions/:applicationNumber" 
+          element={
+            isLoggedIn ? (
+              <LearnerTestInstructions />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          } 
+        />
+        
+        <Route 
+          path="/learner-test/:applicationNumber" 
+          element={
+            isLoggedIn ? (
+              <LearnerTest />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          } 
+        />
+        
+        <Route 
+          path="/test-result/:applicationNumber" 
+          element={
+            isLoggedIn ? (
+              <TestResult />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          } 
+        />
+        
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </div>
   );
 }

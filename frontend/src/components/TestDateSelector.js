@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import './TestDateSelector.css';
 
-const TestDateSelector = ({ selectedDate, onDateSelect, minDaysFromNow = 1, testType = 'colorVision' }) => {
+const TestDateSelector = ({ selectedDate, onDateSelect, minDaysFromNow = 1, minDate = null, testType = 'colorVision' }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [availability, setAvailability] = useState({});
   const [loading, setLoading] = useState(true);
@@ -36,6 +36,11 @@ const TestDateSelector = ({ selectedDate, onDateSelect, minDaysFromNow = 1, test
   }, [fetchAvailability]);
 
   const getMinDate = () => {
+    if (minDate) {
+      const customDate = new Date(minDate);
+      customDate.setDate(customDate.getDate() + 1); // Road test must be after learner test
+      return customDate;
+    }
     const now = new Date();
     const date = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + minDaysFromNow));
     return date;
@@ -85,18 +90,11 @@ const TestDateSelector = ({ selectedDate, onDateSelect, minDaysFromNow = 1, test
 
   const getDateColor = (date) => {
     if (!date) return '';
-    
-    const minDate = getMinDate();
-    
-    if (date < minDate) return 'past';
-    
+    const min = getMinDate();
+    if (date < min) return 'disabled'; // Hide usability before learner test
     const dateKey = formatDateKey(date);
     const dayInfo = availability[dateKey];
-    
-    if (!dayInfo) {
-      return 'green';
-    }
-    
+    if (!dayInfo) return 'green';
     return dayInfo.color;
   };
 
@@ -115,6 +113,9 @@ const TestDateSelector = ({ selectedDate, onDateSelect, minDaysFromNow = 1, test
   };
 
   const handleDateClick = (date) => {
+    if (!date) return;
+    const min = getMinDate();
+    if (date < min) return; // Prevent selection before allowed
     if (isDateDisabled(date)) return;
     onDateSelect(formatDateKey(date));
   };
@@ -130,6 +131,7 @@ const TestDateSelector = ({ selectedDate, onDateSelect, minDaysFromNow = 1, test
   const days = getDaysInMonth();
   const monthName = currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
+  const earliestRoadTest = getMinDate();
   return (
     <div className="calendar-selector">
       <div className="calendar-header">
@@ -141,6 +143,11 @@ const TestDateSelector = ({ selectedDate, onDateSelect, minDaysFromNow = 1, test
           →
         </button>
       </div>
+      {minDate && (
+        <div className="selected-date-display" style={{marginBottom:'8px'}}>
+          Earliest Road Test Date: {earliestRoadTest.toLocaleDateString('en-IN')}
+        </div>
+      )}
 
       <div className="calendar-legend">
         <span className="legend-item">

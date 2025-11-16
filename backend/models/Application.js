@@ -116,6 +116,10 @@ const ApplicationSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  photoData: {
+    type: String, // Base64 encoded image
+    default: null
+  },
   photoUploaded: {
     type: Boolean,
     default: false
@@ -124,6 +128,12 @@ const ApplicationSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  
+  // Color vision test images
+  colorVisionTestImages: [{
+    imageData: String, // Base64 encoded image
+    capturedAt: Date
+  }],
   
   paymentStatus: {
     type: String,
@@ -168,12 +178,46 @@ const ApplicationSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  learnerTestStatus: {
+    type: String,
+    enum: ['not_taken', 'in_progress', 'passed', 'failed'],
+    default: 'not_taken'
+  },
+  learnerTestScore: {
+    type: Number,
+    default: null
+  },
+  learnerTestPassDate: {
+    type: Date,
+    default: null
+  },
+  learnerTestAttempts: {
+    type: Number,
+    default: 0
+  },
+  learnerLicenseNumber: {
+    type: String,
+    default: null,
+    sparse: true
+  },
+  learnerLicenseIssueDate: {
+    type: Date,
+    default: null
+  },
+  learnerLicenseExpiryDate: {
+    type: Date,
+    default: null
+  },
   roadTestCompleted: {
     type: Boolean,
     default: false
   },
   roadTestDate: {
     type: Date,
+    default: null
+  },
+  roadTestSlot: {
+    type: String,
     default: null
   },
   
@@ -196,7 +240,7 @@ const ApplicationSchema = new mongoose.Schema({
   
   applicationStatus: {
     type: String,
-    enum: ['draft', 'registration_complete', 'slots_booked', 'submitted', 'under_review', 'approved', 'rejected', 'completed'],
+    enum: ['draft', 'registration_complete', 'slots_booked', 'submitted', 'under_review', 'approved', 'rejected', 'completed', 'road_test_scheduled'],
     default: 'draft'
   }
 });

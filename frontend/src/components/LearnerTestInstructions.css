@@ -1,0 +1,254 @@
+.instructions-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 40px 20px;
+}
+
+.instructions-card {
+  max-width: 900px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+/* Header */
+.instructions-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 40px;
+  text-align: center;
+}
+
+.instructions-header h1 {
+  margin: 0 0 10px 0;
+  font-size: 32px;
+}
+
+.instructions-header p {
+  margin: 0;
+  font-size: 16px;
+  opacity: 0.9;
+}
+
+/* Sections */
+.section {
+  padding: 30px 40px;
+  border-bottom: 1px solid #eee;
+}
+
+.section h2 {
+  margin: 0 0 20px 0;
+  color: #333;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+/* Candidate Details */
+.details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.detail-row .label {
+  color: #666;
+  font-weight: 500;
+}
+
+.detail-row .value {
+  color: #333;
+  font-weight: 600;
+}
+
+/* Test Info Grid */
+.test-info-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+}
+
+.info-box {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.info-label {
+  font-size: 14px;
+  opacity: 0.9;
+  margin-bottom: 10px;
+  color: white;
+}
+
+.info-value {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+/* Rules List */
+.rules-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.rule-item {
+  display: flex;
+  gap: 15px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 10px;
+  border-left: 4px solid #667eea;
+}
+
+.rule-number {
+  width: 35px;
+  height: 35px;
+  background: #667eea;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.rule-text {
+  flex: 1;
+  color: #333;
+  line-height: 1.6;
+}
+
+.rule-text strong {
+  color: #667eea;
+}
+
+/* Notice Box */
+.notice-box {
+  margin: 30px 40px;
+  padding: 20px;
+  background: #fff3cd;
+  border: 2px solid #ffc107;
+  border-radius: 10px;
+  color: #856404;
+  line-height: 1.8;
+}
+
+.notice-box strong {
+  color: #856404;
+}
+
+/* Action Buttons */
+.action-buttons {
+  padding: 40px;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+.btn-back-action, .btn-start-test {
+  padding: 15px 40px;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-back-action {
+  background: white;
+  color: #667eea;
+  border: 2px solid #667eea;
+}
+
+.btn-back-action:hover {
+  background: #f8f9ff;
+}
+
+.btn-start-test {
+  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+}
+
+.btn-start-test:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+}
+
+/* Loading and Error */
+.loading, .error-message {
+  text-align: center;
+  padding: 50px;
+  color: white;
+  font-size: 24px;
+}
+
+.error-message {
+  background: white;
+  color: #ff4444;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.btn-back {
+  display: block;
+  margin: 0 auto;
+  padding: 12px 30px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-back:hover {
+  background: #5568d3;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .details-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .test-info-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+  }
+  
+  .btn-back-action, .btn-start-test {
+    width: 100%;
+  }
+  
+  .instructions-header h1 {
+    font-size: 24px;
+  }
+  
+  .section {
+    padding: 20px;
+  }
+  
+  .action-buttons {
+    padding: 20px;
+  }
+}

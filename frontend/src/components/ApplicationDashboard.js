@@ -1,14 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import './ApplicationDashboard.css';
 import TestDateSelector from './TestDateSelector';
 import ColorVisionTest from './ColorVisionTest';
-import './ApplicationDashboard.css';
+import ColorVisionTestInstructions from './ColorVisionTestInstructions';
+import RoadTestApplication from './RoadTestApplication';
 
 const ApplicationDashboard = ({ userSession, onLogout }) => {
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [completedSteps, setCompletedSteps] = useState([]);
   const [showDashboard, setShowDashboard] = useState(true);
   const [showColorTest, setShowColorTest] = useState(false);
+  const [showColorInstructions, setShowColorInstructions] = useState(false);
+  const [showRoadTestApplication, setShowRoadTestApplication] = useState(false);
   const [progress, setProgress] = useState(0);
   
   const userData = userSession?.userData || {};
@@ -19,7 +25,13 @@ const ApplicationDashboard = ({ userSession, onLogout }) => {
     colorTestDate: '',
     learnerTestDate: '',
     colorTestPassed: false,
-    learnerTestPassed: false
+    learnerTestPassed: false,
+    learnerTestStatus: 'not_taken',
+    learnerTestScore: null,
+    learnerTestAttempts: 0,
+    learnerLicenseNumber: null,
+    roadTestDate: null,
+    roadTestSlot: null
   });
   
   const [paymentCompleted, setPaymentCompleted] = useState(false);
@@ -30,45 +42,83 @@ const ApplicationDashboard = ({ userSession, onLogout }) => {
   const [errors, setErrors] = useState({});
   const [applicationNumber, setApplicationNumber] = useState('');
 
+  // Load initial data and refresh when returning from test
   useEffect(() => {
-    if (userSession?.hasExistingApplication && userSession?.applicationData) {
-      const appData = userSession.applicationData;
-      
-      setFormData({
-        colorTestDate: appData.colorTestDate || '',
-        learnerTestDate: appData.learnerTestDate || '',
-        colorTestPassed: appData.colorVisionTestCompleted || false,
-        learnerTestPassed: appData.learnerTestCompleted || false
-      });
-      
-      setApplicationNumber(appData.applicationNumber || '');
-      
-      if (appData.paymentStatus === 'completed') {
-        setPaymentCompleted(true);
+    const loadApplicationData = async () => {
+      if (userSession?.hasExistingApplication && digiLockerId) {
+        // ALWAYS fetch fresh data from backend to ensure we have latest payment/test status
+        let appData = userSession.applicationData; // Fallback to session data
+        
+        try {
+          // Always fetch fresh data from backend
+          // Fetch by DigiLocker ID (correct route)
+          const response = await axios.get(`http://localhost:5001/api/applications/user/${digiLockerId}`);
+          if (response.data.data) {
+            appData = response.data.data;
+          }
+          localStorage.removeItem('learnerTestCompleted'); // Clear any flags
+        } catch (error) {
+          console.error('Error fetching fresh application data:', error);
+        }
+        
+        setFormData({
+          colorTestDate: appData.colorTestDate || '',
+          learnerTestDate: appData.learnerTestDate || '',
+          colorTestPassed: appData.colorVisionTestCompleted || false,
+          learnerTestPassed: appData.learnerTestCompleted || false,
+          learnerTestStatus: appData.learnerTestStatus || 'not_taken',
+          learnerTestScore: appData.learnerTestScore || null,
+          learnerTestAttempts: appData.learnerTestAttempts || 0,
+          learnerLicenseNumber: appData.learnerLicenseNumber || null,
+          roadTestDate: appData.roadTestDate || null,
+          roadTestSlot: appData.roadTestSlot || null
+        });
+        
+        setApplicationNumber(appData.applicationNumber || '');
+        
+        // Set payment completed status from database
+        if (appData.paymentStatus === 'completed' || appData.paymentCompleted) {
+          setPaymentCompleted(true);
+        }
+        
+        const completed = [];
+        if (appData.paymentStatus === 'completed' || appData.paymentCompleted) {
+          completed.push(1);
+        }
+        if (appData.colorVisionTestCompleted) {
+          completed.push(2);
+        }
+        if (appData.learnerTestStatus === 'passed') {
+          completed.push(3);
+        }
+        if (appData.roadTestDate && appData.roadTestSlot) {
+          completed.push(4);
+        }
+        
+        setCompletedSteps(completed);
+        
+        let calculatedProgress = 0;
+        if (appData.paymentStatus === 'completed' || appData.paymentCompleted) {
+          calculatedProgress = 20;
+        }
+        if (appData.colorVisionTestCompleted) {
+          calculatedProgress = 35;
+        }
+        if (appData.learnerTestStatus === 'passed') {
+          calculatedProgress = 50;
+        }
+        if (appData.roadTestDate && appData.roadTestSlot) {
+          calculatedProgress = 70;
+        }
+        setProgress(calculatedProgress);
+        
+        const nextIncompleteStep = completed.length < 2 ? completed.length + 1 : 2;
+        setCurrentStep(nextIncompleteStep);
       }
-      
-      const completed = [];
-      if (appData.colorTestDate && appData.learnerTestDate && appData.paymentStatus === 'completed') {
-        completed.push(1);
-      }
-      if (appData.colorVisionTestCompleted) {
-        completed.push(2);
-      }
-      setCompletedSteps(completed);
-      
-      let calculatedProgress = 0;
-      if (appData.colorTestDate && appData.learnerTestDate && appData.paymentStatus === 'completed') {
-        calculatedProgress = 20;
-      }
-      if (appData.colorVisionTestCompleted) {
-        calculatedProgress = 35;
-      }
-      setProgress(calculatedProgress);
-      
-      const nextIncompleteStep = completed.length < 2 ? completed.length + 1 : 2;
-      setCurrentStep(nextIncompleteStep);
-    }
-  }, [userSession]);
+    };
+    
+    loadApplicationData();
+  }, [userSession, digiLockerId]);
 
   const isStepUnlocked = (step) => {
     if (step === 1) return true;
@@ -130,13 +180,15 @@ const ApplicationDashboard = ({ userSession, onLogout }) => {
         setPaymentReference(paymentReferenceNumber);
         
         try {
-          await axios.post('http://localhost:5001/api/applications/complete-payment', {
+          const paymentResponse = await axios.post('http://localhost:5001/api/applications/complete-payment', {
             digilocker: digiLockerId,
             paymentReference: paymentReferenceNumber,
             amount: amount
           });
         } catch (paymentError) {
-          console.error('Payment status update failed:', paymentError);
+          console.error('Payment status update FAILED:', paymentError);
+          alert('Warning: Payment status update failed. Please contact support.');
+          return; // Don't show success modal if payment failed
         }
         
         setShowPaymentModal(true);
@@ -155,11 +207,21 @@ const ApplicationDashboard = ({ userSession, onLogout }) => {
       alert('Payment not completed. Please complete payment before attempting the test.');
       return;
     }
-    setShowColorTest(true);
+    setShowColorInstructions(true);
     setShowDashboard(false);
   };
 
-  const handleTestComplete = (result) => {
+  const startColorTest = () => {
+    setShowColorInstructions(false);
+    setShowColorTest(true);
+  };
+
+  const cancelColorInstructions = () => {
+    setShowColorInstructions(false);
+    setShowDashboard(true);
+  };
+
+  const handleTestComplete = async (result) => {
     setShowColorTest(false);
     setShowDashboard(true);
     
@@ -167,6 +229,26 @@ const ApplicationDashboard = ({ userSession, onLogout }) => {
       setFormData(prev => ({ ...prev, colorTestPassed: true }));
       setProgress(35);
       completeCurrentStep(2);
+      
+      // Refresh application data to get updated status
+      try {
+        const response = await axios.get(`http://localhost:5001/api/applications/user/${digiLockerId}`);
+        if (response.data.data) {
+          const appData = response.data.data;
+          setFormData(prev => ({
+            ...prev,
+            colorTestPassed: appData.colorVisionTestCompleted || false,
+            learnerTestPassed: appData.learnerTestCompleted || false,
+            learnerTestStatus: appData.learnerTestStatus || 'not_taken',
+            learnerTestScore: appData.learnerTestScore || null,
+            learnerTestAttempts: appData.learnerTestAttempts || 0,
+            learnerLicenseNumber: appData.learnerLicenseNumber || null
+          }));
+        }
+      } catch (error) {
+        console.error('Error refreshing application data:', error);
+      }
+      
       alert(`Congratulations! Test Passed. Score: ${result.score.toFixed(1)}%`);
     } else {
       alert(`Test Failed. Score: ${result.score.toFixed(1)}%. You need 70% to pass.`);
@@ -175,21 +257,159 @@ const ApplicationDashboard = ({ userSession, onLogout }) => {
 
   const cancelTest = () => {
     setShowColorTest(false);
+    setShowColorInstructions(false);
     setShowDashboard(true);
   };
 
+  const takeLearnerTest = () => {
+    if (!formData.colorTestPassed) {
+      alert('You must complete the Color Vision Test first before taking the Learner Test.');
+      return;
+    }
+    
+    if (!applicationNumber) {
+      alert('Application number not found. Please refresh the page and try again.');
+      console.error('Missing application number:', { applicationNumber, digiLockerId });
+      return;
+    }
+    
+    navigate(`/learner-test-instructions/${applicationNumber}`);
+  };
+
+  const applyForRoadTest = () => {
+    if (formData.learnerTestStatus !== 'passed') {
+      alert('You must pass the Learner License Test before applying for Road Test.');
+      return;
+    }
+    
+    if (!applicationNumber) {
+      alert('Application number not found. Please refresh the page and try again.');
+      return;
+    }
+    
+    setShowRoadTestApplication(true);
+    setShowDashboard(false);
+  };
+
+    const handleRoadTestComplete = async (result) => {
+    setShowRoadTestApplication(false);
+    setShowDashboard(true);
+    
+    if (result.success) {
+      // Refresh data from backend to get latest state
+      await refreshDashboardData();
+      alert(`Road Test Application Submitted!\nDate: ${new Date(result.roadTestDate).toLocaleDateString('en-IN')}\nSlot: ${result.roadTestSlot}`);
+    }
+  };
+
+  const cancelRoadTestApplication = () => {
+    setShowRoadTestApplication(false);
+    setShowDashboard(true);
+  };
+
+  // Refresh dashboard data after test completion
+  const refreshDashboardData = useCallback(async () => {
+    try {
+      const response = await axios.get(`http://localhost:5001/api/applications/user/${digiLockerId}`);
+      if (response.data.data) {
+        const appData = response.data.data;
+        
+        setFormData({
+          colorTestDate: appData.colorTestDate || '',
+          learnerTestDate: appData.learnerTestDate || '',
+          colorTestPassed: appData.colorVisionTestCompleted || false,
+          learnerTestPassed: appData.learnerTestCompleted || false,
+          learnerTestStatus: appData.learnerTestStatus || 'not_taken',
+          learnerTestScore: appData.learnerTestScore || null,
+          learnerTestAttempts: appData.learnerTestAttempts || 0,
+          learnerLicenseNumber: appData.learnerLicenseNumber || null,
+          roadTestDate: appData.roadTestDate || null,
+          roadTestSlot: appData.roadTestSlot || null
+        });
+        
+        const completed = [];
+        if (appData.paymentStatus === 'completed' || appData.paymentCompleted) {
+          completed.push(1);
+        }
+        if (appData.colorVisionTestCompleted) {
+          completed.push(2);
+        }
+        if (appData.learnerTestStatus === 'passed') {
+          completed.push(3);
+        }
+        if (appData.roadTestDate && appData.roadTestSlot) {
+          completed.push(4);
+        }
+        setCompletedSteps(completed);
+        
+        let calculatedProgress = 0;
+        if (appData.paymentStatus === 'completed' || appData.paymentCompleted) {
+          calculatedProgress = 20;
+        }
+        if (appData.colorVisionTestCompleted) {
+          calculatedProgress = 35;
+        }
+        if (appData.learnerTestStatus === 'passed') {
+          calculatedProgress = 50;
+        }
+        if (appData.roadTestDate && appData.roadTestSlot) {
+          calculatedProgress = 70;
+        }
+        setProgress(calculatedProgress);
+      }
+    } catch (error) {
+      console.error('Error refreshing dashboard data:', error);
+    }
+  }, [digiLockerId]);
+
+  // Listen for storage events (from other tabs/windows)
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'learnerTestCompleted') {
+        refreshDashboardData();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [digiLockerId, refreshDashboardData]);
+
+  const handleDownloadLicense = () => {
+    window.open(
+      `http://localhost:5001/api/learner-test/download-license/${applicationNumber}`,
+      '_blank'
+    );
+  };
+
   return (
-    <div className="dashboard-container">
+    <div className={`dashboard-container ${showColorTest || showRoadTestApplication ? 'test-active' : ''}`}>
+      {showColorInstructions && (
+        <ColorVisionTestInstructions 
+          onStart={startColorTest}
+          onCancel={cancelColorInstructions}
+        />
+      )}
+
       {showColorTest && (
         <ColorVisionTest
           applicationNumber={applicationNumber}
           digiLockerId={digiLockerId}
+          fullName={username}
           onTestComplete={handleTestComplete}
           onCancel={cancelTest}
         />
       )}
 
-      {!showColorTest && (
+      {showRoadTestApplication && (
+        <RoadTestApplication
+          applicationNumber={applicationNumber}
+          digiLockerId={digiLockerId}
+          onComplete={handleRoadTestComplete}
+          onCancel={cancelRoadTestApplication}
+        />
+      )}
+
+      {!showColorTest && !showColorInstructions && !showRoadTestApplication && (
         <div>
           <div className="dashboard-header">
             <div className="header-content">
@@ -256,7 +476,7 @@ const ApplicationDashboard = ({ userSession, onLogout }) => {
                   const isCompleted = completedSteps.includes(step.id);
                   const isUnlocked = isStepUnlocked(step.id);
                   const isCurrent = isUnlocked && !isCompleted;
-                  const isLocked = (step.id === 3 || step.id === 4);
+                  const isLocked = false; // All steps can be unlocked now
 
                   return (
                     <div
@@ -264,8 +484,16 @@ const ApplicationDashboard = ({ userSession, onLogout }) => {
                       className={`step-card ${isCompleted ? 'completed' : ''} ${isLocked ? 'locked' : (isUnlocked && !isCompleted ? 'unlocked' : 'locked')} ${isCurrent && !isLocked ? 'current' : ''}`}
                       onClick={() => {
                         if (!isLocked && isUnlocked && !isCompleted) {
-                          setCurrentStep(step.id);
-                          setShowDashboard(false);
+                          if (step.id === 1) {
+                            setCurrentStep(1);
+                            setShowDashboard(false);
+                          } else if (step.id === 2) {
+                            takeColorTest();
+                          } else if (step.id === 3) {
+                            takeLearnerTest();
+                          } else if (step.id === 4) {
+                            applyForRoadTest();
+                          }
                         }
                       }}
                       style={{ cursor: (isLocked || !isUnlocked || isCompleted) ? 'not-allowed' : 'pointer' }}
@@ -273,19 +501,55 @@ const ApplicationDashboard = ({ userSession, onLogout }) => {
                       <div className="step-content-card">
                         <div className="step-header">
                           <h3>Step {step.id}</h3>
-                          {isCompleted && <span className="check-badge">✓</span>}
-                          {(isLocked || !isUnlocked) && <span className="lock-badge">🔒</span>}
+                          {(isLocked || !isUnlocked) && <span className="lock-badge">LOCKED</span>}
                         </div>
                         <h4>{step.title}</h4>
                         <p>{step.desc}</p>
-                        {isLocked && <span className="status-text locked-text">Coming Soon</span>}
-                        {!isLocked && isCurrent && <button className="start-btn">Start Now</button>}
-                        {isCompleted && <span className="status-text completed-text">Completed</span>}
+                        {isCompleted ? (
+                          step.id === 4 && formData.roadTestDate && formData.roadTestSlot ? (
+                            <div className="scheduled-info">
+                              <span className="status-text completed-text">✓ Scheduled</span>
+                              <p className="scheduled-details">
+                                <strong>{new Date(formData.roadTestDate).toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</strong><br />
+                                at <strong>{formData.roadTestSlot}</strong>
+                              </p>
+                            </div>
+                          ) : (
+                            <span className="status-text completed-text">Completed</span>
+                          )
+                        ) : isLocked ? (
+                          <span className="status-text locked-text">Coming Soon</span>
+                        ) : isCurrent ? (
+                          <button className="start-btn">
+                            {step.id === 3 && formData.learnerTestStatus === 'failed' 
+                              ? 'Retry Test' 
+                              : step.id === 4 
+                                ? 'Apply Now' 
+                                : 'Start Now'}
+                          </button>
+                        ) : null}
                       </div>
                     </div>
                   );
                 })}
               </div>
+
+              {/* Download Learner License Button */}
+              {formData.learnerTestStatus === 'passed' && formData.learnerLicenseNumber && (
+                <div className="license-download-section">
+                  <div className="license-card">
+                    <div className="license-icon">Learner's License</div>
+                    <div className="license-info-text">
+                      <h3>Click on "Get License" to Download Your Learner's License</h3>
+                      <p>License Number: <strong>{formData.learnerLicenseNumber}</strong></p>
+                      <p className="license-score">Test Score: {formData.learnerTestScore}/30</p>
+                    </div>
+                    <button onClick={handleDownloadLicense} className="download-license-btn">
+                      Get License 
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div>
@@ -304,7 +568,7 @@ const ApplicationDashboard = ({ userSession, onLogout }) => {
                   </div>
                 )}
                 
-                {currentStep === 1 && (
+                {currentStep === 1 && !completedSteps.includes(1) && (
                   <div className="step-content">
                     <h2>Step 1: Book Test Slots & Payment</h2>
                     <p className="step-description">Select dates for your color vision and learner tests</p>
@@ -363,11 +627,6 @@ const ApplicationDashboard = ({ userSession, onLogout }) => {
                     <p className="step-description">Take your color vision test</p>
 
                     <div className="test-section">
-                      <div className="test-info">
-                        <p>Test Date: {formData.colorTestDate || 'Not selected'}</p>
-                        <p>Please arrive 15 minutes before your test time</p>
-                      </div>
-
                       {!formData.colorTestPassed && (
                         <button
                           onClick={takeColorTest}
@@ -380,7 +639,7 @@ const ApplicationDashboard = ({ userSession, onLogout }) => {
 
                       {formData.colorTestPassed && (
                         <div className="success-message">
-                          ✓ Color vision test passed!
+                          Color vision test passed!
                         </div>
                       )}
                     </div>
@@ -391,7 +650,7 @@ const ApplicationDashboard = ({ userSession, onLogout }) => {
                   <div className="step-content locked-content">
                     <h2>{currentStep === 3 ? 'Learner License Test' : 'Road Test Application'}</h2>
                     <div className="coming-soon-message">
-                      <div className="coming-soon-icon">🔒</div>
+                      <div className="coming-soon-icon">LOCKED</div>
                       <h3>Coming Soon!</h3>
                       <p>This feature is currently under development.</p>
                     </div>
@@ -406,7 +665,11 @@ const ApplicationDashboard = ({ userSession, onLogout }) => {
       {showPaymentModal && (
         <div className="success-modal">
           <div className="success-modal-content">
-            <div className="success-icon">✓</div>
+            <div className="success-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
             <h3>Booking & Payment Successful!</h3>
             <p className="success-message">Your test slots have been booked.</p>
             <div className="payment-details-box">
@@ -447,9 +710,59 @@ const ApplicationDashboard = ({ userSession, onLogout }) => {
             </div>
             <button 
               className="primary-btn" 
-              onClick={() => {
+              onClick={async () => {
                 setShowPaymentModal(false);
                 setPaymentCompleted(true);
+                
+                // Reload application data from backend to get updated status
+                try {
+                  const response = await axios.get(`http://localhost:5001/api/applications/user/${digiLockerId}`);
+                  if (response.data.data) {
+                    const appData = response.data.data;
+                    
+                    setFormData({
+                      colorTestDate: appData.colorTestDate || '',
+                      learnerTestDate: appData.learnerTestDate || '',
+                      colorTestPassed: appData.colorVisionTestCompleted || false,
+                      learnerTestPassed: appData.learnerTestCompleted || false,
+                      learnerTestStatus: appData.learnerTestStatus || 'not_taken',
+                      learnerTestScore: appData.learnerTestScore || null,
+                      learnerTestAttempts: appData.learnerTestAttempts || 0,
+                      learnerLicenseNumber: appData.learnerLicenseNumber || null
+                    });
+                    
+                    // Update completed steps based on fresh data
+                    const completed = [];
+                    if (appData.paymentStatus === 'completed' || appData.paymentCompleted) {
+                      completed.push(1);
+                    }
+                    if (appData.colorVisionTestCompleted) {
+                      completed.push(2);
+                    }
+                    if (appData.learnerTestStatus === 'passed') {
+                      completed.push(3);
+                    }
+                    setCompletedSteps(completed);
+                    
+                    let calculatedProgress = 0;
+                    if (appData.paymentStatus === 'completed' || appData.paymentCompleted) {
+                      calculatedProgress = 20;
+                    }
+                    if (appData.colorVisionTestCompleted) {
+                      calculatedProgress = 35;
+                    }
+                    if (appData.learnerTestStatus === 'passed') {
+                      calculatedProgress = 50;
+                    }
+                    setProgress(calculatedProgress);
+                    
+                    const nextIncompleteStep = completed.length < 2 ? completed.length + 1 : 2;
+                    setCurrentStep(nextIncompleteStep);
+                  }
+                } catch (error) {
+                  console.error('Error reloading application data:', error);
+                }
+                
                 setShowDashboard(true);
               }}
             >

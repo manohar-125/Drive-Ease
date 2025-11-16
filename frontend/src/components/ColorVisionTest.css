@@ -1,7 +1,7 @@
 .color-test-container {
-  max-width: 900px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 40px;
   background: rgba(255, 255, 255, 0.98);
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
@@ -63,23 +63,36 @@
 
 .test-content {
   margin-bottom: 30px;
+  display: flex;
+  justify-content: center;
 }
 
 .question-card {
   background: #f8f9fa;
-  padding: 30px;
+  padding: 40px;
   border-radius: 10px;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
 }
 
 .ishihara-plate {
   text-align: center;
-  margin-bottom: 30px;
+  margin: 0 auto 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .plate-image {
-  width: 300px;
-  height: 300px;
-  margin: 0 auto 15px;
+  width: 350px;
+  height: 350px;
+  margin: 0 auto 20px;
   background: white;
   border-radius: 50%;
   display: flex;
@@ -89,6 +102,7 @@
   border: 8px solid #f0f0f0;
   overflow: hidden;
   padding: 10px;
+  flex-shrink: 0;
 }
 
 .plate-instruction {
@@ -100,75 +114,113 @@
 .question-text {
   text-align: center;
   color: #333;
-  font-size: 22px;
-  margin-bottom: 30px;
+  font-size: 24px;
+  margin-bottom: 20px;
+  font-weight: 600;
+  width: 100%;
 }
 
 .options-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 15px;
+  gap: 20px;
+  margin-top: 30px;
+  width: 100%;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-.option-btn {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  padding: 20px;
-  background: white;
-  border: 3px solid #e0e0e0;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 18px;
+.color-test-container .options-grid .option-btn {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 20px !important;
+  padding: 20px 25px !important;
+  background: white !important;
+  border: 2px solid #d8d8d8 !important;
+  border-radius: 12px !important;
+  cursor: pointer !important;
+  transition: all 0.25s ease !important;
+  font-size: 18px !important;
+  min-height: 75px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  text-align: left !important;
 }
 
-.option-btn:hover {
-  border-color: #667eea;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+.color-test-container .options-grid .option-btn:hover {
+  border-color: #667eea !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3) !important;
 }
 
-.option-btn.selected {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-color: #667eea;
-  color: white;
-  transform: scale(1.02);
+.color-test-container .options-grid .option-btn.selected {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  border-color: #667eea !important;
+  color: white !important;
+  transform: scale(1.02) !important;
 }
 
-.option-label {
-  width: 40px;
-  height: 40px;
-  background: #667eea;
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  flex-shrink: 0;
+.color-test-container .options-grid .option-btn.selected .option-text {
+  color: white !important;
 }
 
-.option-btn.selected .option-label {
-  background: white;
-  color: #667eea;
+.color-test-container .options-grid .option-btn.selected .option-label {
+  background: white !important;
+  color: #667eea !important;
 }
 
-.option-text {
-  flex: 1;
-  text-align: left;
-  font-weight: 600;
+.color-test-container .options-grid .option-btn .option-label {
+  width: 48px !important;
+  height: 48px !important;
+  min-width: 48px !important;
+  max-width: 48px !important;
+  background: #667eea !important;
+  color: #ffffff !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-weight: 700 !important;
+  font-size: 20px !important;
+  line-height: 1 !important;
+  flex-shrink: 0 !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15) !important;
+}
+
+.color-test-container .options-grid .option-btn .option-text {
+  flex: 1 !important;
+  text-align: left !important;
+  font-weight: 600 !important;
+  font-size: 18px !important;
+  color: #333 !important;
+  display: block !important;
 }
 
 .test-footer {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   gap: 15px;
   padding-top: 20px;
   border-top: 2px solid #e0e0e0;
 }
 
+.footer-left {
+  display: flex;
+  gap: 15px;
+}
+
+.footer-right {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+}
+
 .btn-cancel,
+.btn-previous,
 .btn-next {
   padding: 15px 40px;
   font-size: 16px;
@@ -186,6 +238,22 @@
 
 .btn-cancel:hover {
   background: #e0e0e0;
+}
+
+.btn-previous {
+  background: #667eea;
+  color: white;
+}
+
+.btn-previous:hover:not(:disabled) {
+  background: #5568d3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-previous:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .btn-next {
@@ -217,13 +285,18 @@
     padding: 15px;
   }
 
+  .question-card {
+    padding: 20px;
+  }
+
   .options-grid {
     grid-template-columns: 1fr;
+    max-width: 100%;
   }
 
   .plate-image {
-    width: 200px;
-    height: 200px;
+    width: 250px;
+    height: 250px;
     font-size: 60px;
   }
 
@@ -231,11 +304,34 @@
     font-size: 18px;
   }
 
+  .option-btn {
+    padding: 20px;
+    gap: 15px;
+    font-size: 18px;
+    min-height: 70px;
+  }
+
+  .option-label {
+    width: 45px;
+    height: 45px;
+    font-size: 20px;
+  }
+
   .test-footer {
     flex-direction: column;
   }
 
+  .footer-left,
+  .footer-right {
+    width: 100%;
+  }
+
+  .footer-left {
+    flex-direction: column;
+  }
+
   .btn-cancel,
+  .btn-previous,
   .btn-next {
     width: 100%;
   }

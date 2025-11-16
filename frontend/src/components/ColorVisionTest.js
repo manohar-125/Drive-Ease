@@ -83,6 +83,15 @@ const ColorVisionTest = ({ applicationNumber, digiLockerId, onTestComplete, onCa
     return wrongAnswers;
   };
 
+  // Load saved answer when question changes
+  useEffect(() => {
+    if (answers[currentQuestion] !== undefined) {
+      setSelectedAnswer(answers[currentQuestion]);
+    } else {
+      setSelectedAnswer(null);
+    }
+  }, [currentQuestion, answers]);
+
   useEffect(() => {
     const shuffledImages = [...availableImages].sort(() => Math.random() - 0.5).slice(0, 10);
     
@@ -119,13 +128,40 @@ const ColorVisionTest = ({ applicationNumber, digiLockerId, onTestComplete, onCa
     setSelectedAnswer(optionIndex);
   };
 
+  const handlePrevious = () => {
+    if (currentQuestion > 0) {
+      // Save current answer if selected
+      if (selectedAnswer !== null) {
+        const newAnswers = [...answers];
+        newAnswers[currentQuestion] = selectedAnswer;
+        setAnswers(newAnswers);
+      }
+      
+      // Go to previous question
+      setCurrentQuestion(currentQuestion - 1);
+      
+      // Load previous answer if exists
+      if (answers[currentQuestion - 1] !== undefined) {
+        setSelectedAnswer(answers[currentQuestion - 1]);
+      } else {
+        setSelectedAnswer(null);
+      }
+    }
+  };
+
   const handleNext = () => {
     if (selectedAnswer !== null) {
-      setAnswers([...answers, selectedAnswer]);
+      const newAnswers = [...answers];
+      newAnswers[currentQuestion] = selectedAnswer;
+      setAnswers(newAnswers);
       setSelectedAnswer(null);
       
       if (currentQuestion < testQuestions.length - 1) {
         setCurrentQuestion(currentQuestion + 1);
+        // Load next answer if exists (when going back and forth)
+        if (newAnswers[currentQuestion + 1] !== undefined) {
+          setSelectedAnswer(newAnswers[currentQuestion + 1]);
+        }
       } else {
         handleSubmit();
       }
@@ -193,16 +229,27 @@ const ColorVisionTest = ({ applicationNumber, digiLockerId, onTestComplete, onCa
       </div>
 
       <div className="test-footer">
-        <button className="btn-cancel" onClick={onCancel}>
-          Cancel Test
-        </button>
-        <button
-          className="btn-next"
-          onClick={handleNext}
-          disabled={selectedAnswer === null}
-        >
-          {currentQuestion === testQuestions.length - 1 ? 'Submit Test' : 'Next Question'}
-        </button>
+        <div className="footer-left">
+          <button className="btn-cancel" onClick={onCancel}>
+            Cancel Test
+          </button>
+          <button
+            className="btn-previous"
+            onClick={handlePrevious}
+            disabled={currentQuestion === 0}
+          >
+            ← Previous
+          </button>
+        </div>
+        <div className="footer-right">
+          <button
+            className="btn-next"
+            onClick={handleNext}
+            disabled={selectedAnswer === null}
+          >
+            {currentQuestion === testQuestions.length - 1 ? 'Submit Test' : 'Next Question →'}
+          </button>
+        </div>
       </div>
     </div>
   );

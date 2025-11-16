@@ -346,8 +346,6 @@ router.post('/book-slots', async (req, res) => {
   try {
     const { digilocker, colorTestDate, learnerTestDate } = req.body;
 
-    console.log('Booking request received:', { digilocker, colorTestDate, learnerTestDate });
-
     if (!digilocker || !colorTestDate || !learnerTestDate) {
       return res.status(400).json({
         success: false,
@@ -366,7 +364,6 @@ router.post('/book-slots', async (req, res) => {
     }
 
     let application = await Application.findOne({ digilocker });
-    console.log('Application found:', application ? 'Yes' : 'No');
     
     if (!application) {
       return res.status(404).json({
@@ -459,6 +456,14 @@ router.post('/complete-color-test', async (req, res) => {
         score: score,
         message: `Test failed with ${score.toFixed(1)}% score. You need 70% to pass. Please try again.`
       });
+    }
+
+    // Store color vision test images if provided
+    if (req.body.capturedImages && Array.isArray(req.body.capturedImages)) {
+      application.colorVisionTestImages = req.body.capturedImages.map(img => ({
+        imageData: img,
+        capturedAt: new Date()
+      }));
     }
 
     application.colorVisionTestCompleted = true;
@@ -583,12 +588,11 @@ router.get('/calendar-availability', async (req, res) => {
       const isWeekend = isSunday || isSaturday;
       
       const booking = bookings.find(b => 
-        b.date.toISOString().split('T')[0] === dateStr
+        new Date(b.date).toISOString().split('T')[0] === dateStr
       );
-      
-      const bookingField = testType === 'learnerTest' ? 'learnerTestBookings' : 'colorVisionBookings';
-      const bookedSlots = booking ? (booking[bookingField] || 0) : 0;
-      const maxSlots = 5;
+
+      const bookedSlots = booking ? (Array.isArray(booking.bookedSlots) ? booking.bookedSlots.length : (booking.bookedSlots || 0)) : 0;
+      const maxSlots = booking ? (booking.maxSlots || 5) : 5;
       const availableSlots = maxSlots - bookedSlots;
       
       let status = 'available';
@@ -1183,49 +1187,151 @@ router.post('/complete-payment', async (req, res) => {
   }
 });
 
+// Apply for Road Test
 router.post('/apply-road-test', async (req, res) => {
   try {
-    const { digilocker } = req.body;
-    
-    if (!digilocker) {
+    const { applicationNumber, learnerLicenseId, roadTestDate, roadTestSlot } = req.body;
+
+    // Validate required fields
+    if (!applicationNumber || !learnerLicenseId || !roadTestDate || !roadTestSlot) {
       return res.status(400).json({
         success: false,
-        message: 'DigiLocker ID is required'
+        message: 'All fields are required'
       });
     }
 
-    const application = await Application.findOne({ digilocker });
-    
+    // Find application by applicationNumber only (digilocker already verified during registration)
+    const application = await Application.findOne({
+      applicationNumber
+    });
+
     if (!application) {
       return res.status(404).json({
         success: false,
-        message: 'No application found for this DigiLocker ID'
+        message: 'Application not found'
       });
     }
 
-    if (!application.learnerTestCompleted) {
+    // A-1: Check if learner license is valid (not expired)
+    if (!application.learnerLicenseExpiryDate) {
       return res.status(400).json({
         success: false,
-        message: 'Learner test must be completed before applying for road test'
+        message: 'Learner License not found. Please complete the Learner Test first.'
       });
     }
 
-    application.applicationStatus = 'completed';
-    await application.save();
+    const expiryDate = new Date(application.learnerLicenseExpiryDate);
+    const today = new Date();
+    
+    if (expiryDate <= today) {
+      return res.status(400).json({
+        success: false,
+        message: 'Learner License expired or invalid. Applicant cannot proceed.'
+      });
+    }
+
+    // A-2: Validate Road Test date is after Learner Test date
+    if (application.learnerTestDate) {
+      const learnerDate = new Date(application.learnerTestDate);
+      const roadDate = new Date(roadTestDate);
+      
+      if (roadDate <= learnerDate) {
+        return res.status(400).json({
+          success: false,
+          message: 'Road Test date must be after the Learner Test date. Applicant must choose another date.'
+        });
+      }
+    }
+
+    // Business Rule: Road Test must be scheduled within 6 months of learner license issue date
+    if (application.learnerLicenseIssueDate) {
+      const issueDate = new Date(application.learnerLicenseIssueDate);
+      const sixMonthsLater = new Date(issueDate);
+      sixMonthsLater.setMonth(sixMonthsLater.getMonth() + 6);
+      const roadDate = new Date(roadTestDate);
+      
+      if (roadDate > sixMonthsLater) {
+        return res.status(400).json({
+          success: false,
+          message: 'Road Test must be scheduled within 6 months of learner license issue date.'
+        });
+      }
+    }
+
+    // A-3: Check slot availability (max 5 slots per day)
+    const testDate = new Date(roadTestDate);
+    testDate.setHours(0, 0, 0, 0);
+
+    let dailyBooking = await DailyBooking.findOne({
+      date: testDate,
+      testType: 'road'
+    });
+
+    if (!dailyBooking) {
+      dailyBooking = new DailyBooking({
+        date: testDate,
+        testType: 'road',
+        maxSlots: 5,
+        bookedSlots: []
+      });
+    }
+
+    // Ensure bookedSlots is an array
+    if (!Array.isArray(dailyBooking.bookedSlots)) {
+      dailyBooking.bookedSlots = [];
+    }
+
+    // Check if slot already exists for this time
+    const slotExists = dailyBooking.bookedSlots.some(booking => booking.timeSlot === roadTestSlot);
+    
+    if (slotExists || dailyBooking.bookedSlots.length >= 5) {
+      return res.status(400).json({
+        success: false,
+        message: 'No slots available for this date. Applicant must select a different date.'
+      });
+    }
+
+    // Business Rule: Applicant can have only one active road test application
+    // Use the same digilocker associated with the fetched application (already verified at registration)
+    const existingRoadTest = await Application.findOne({
+      digilocker: application.digilocker,
+      roadTestDate: { $exists: true, $ne: null },
+      roadTestCompleted: false
+    });
+
+    if (existingRoadTest && existingRoadTest.applicationNumber !== applicationNumber) {
+      return res.status(400).json({
+        success: false,
+        message: 'You already have an active road test application.'
+      });
+    }
+
+    // Update application with road test details
+    application.roadTestDate = testDate;
+    application.roadTestSlot = roadTestSlot;
+    application.applicationStatus = 'road_test_scheduled';
+    await application.save({ validateBeforeSave: false });
+
+    // Book the slot
+    dailyBooking.bookedSlots.push({
+      applicationNumber,
+      timeSlot: roadTestSlot,
+      applicantName: application.fullName
+    });
+    await dailyBooking.save();
 
     res.json({
       success: true,
       message: 'Road test application submitted successfully',
-      data: {
-        applicationNumber: application.applicationNumber,
-        applicationStatus: application.applicationStatus
-      }
+      roadTestDate: testDate,
+      roadTestSlot
     });
+
   } catch (error) {
     console.error('Error applying for road test:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error while applying for road test'
+      message: 'Server error. Please try again later.'
     });
   }
 });

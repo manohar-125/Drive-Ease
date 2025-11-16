@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -9,8 +10,12 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Serve static files for test images
+app.use('/api/test-images', express.static(path.join(__dirname, 'data/sign boards')));
+
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/applications', require('./routes/applicationRoutes'));
+app.use('/api/learner-test', require('./routes/learnerTestRoutes'));
 
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/drive-ease', {
   useNewUrlParser: true,

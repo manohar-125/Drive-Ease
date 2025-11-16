@@ -1,0 +1,251 @@
+.instructions-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.95) 0%, rgba(118, 75, 162, 0.95) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  overflow-y: auto;
+  backdrop-filter: blur(10px);
+}
+
+.instructions-container {
+  background: white;
+  border-radius: 16px;
+  max-width: 900px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.instructions-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 30px 40px;
+  border-radius: 16px 16px 0 0;
+  text-align: center;
+}
+
+.instructions-header h2 {
+  margin: 0 0 10px 0;
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.test-subtitle {
+  margin: 0;
+  font-size: 16px;
+  opacity: 0.95;
+}
+
+.instructions-content {
+  padding: 40px;
+  display: grid;
+  gap: 30px;
+}
+
+.instruction-section {
+  background: #f8f9fa;
+  padding: 25px;
+  border-radius: 12px;
+  border-left: 4px solid #667eea;
+}
+
+.instruction-section.warning-section {
+  background: #fff3cd;
+  border-left-color: #ff9800;
+}
+
+.section-icon {
+  font-size: 32px;
+  margin-bottom: 15px;
+}
+
+.instruction-section h3 {
+  color: #333;
+  margin: 0 0 15px 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.instruction-section ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.instruction-section li {
+  color: #555;
+  font-size: 16px;
+  line-height: 1.8;
+  margin-bottom: 8px;
+}
+
+.instruction-section li strong {
+  color: #667eea;
+  font-weight: 600;
+}
+
+.warning-section li strong {
+  color: #ff9800;
+}
+
+.instructions-footer {
+  padding: 30px 40px;
+  background: #f8f9fa;
+  border-radius: 0 0 16px 16px;
+  border-top: 2px solid #e0e0e0;
+}
+
+.consent-section {
+  margin-bottom: 25px;
+}
+
+.consent-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  font-size: 16px;
+  color: #333;
+  user-select: none;
+}
+
+.consent-checkbox input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+  accent-color: #667eea;
+}
+
+.consent-checkbox span {
+  font-weight: 500;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 15px;
+  justify-content: flex-end;
+}
+
+.btn-cancel-instructions,
+.btn-start-test {
+  padding: 15px 40px;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-cancel-instructions {
+  background: #e0e0e0;
+  color: #666;
+}
+
+.btn-cancel-instructions:hover {
+  background: #d0d0d0;
+}
+
+.btn-start-test {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  min-width: 180px;
+}
+
+.btn-start-test:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.btn-start-test:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Scrollbar styling */
+.instructions-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.instructions-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.instructions-container::-webkit-scrollbar-thumb {
+  background: #667eea;
+  border-radius: 4px;
+}
+
+.instructions-container::-webkit-scrollbar-thumb:hover {
+  background: #5568d3;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .instructions-container {
+    max-width: 100%;
+    margin: 10px;
+  }
+
+  .instructions-header {
+    padding: 25px 20px;
+  }
+
+  .instructions-header h2 {
+    font-size: 24px;
+  }
+
+  .instructions-content {
+    padding: 20px;
+    gap: 20px;
+  }
+
+  .instruction-section {
+    padding: 20px;
+  }
+
+  .section-icon {
+    font-size: 24px;
+  }
+
+  .instruction-section h3 {
+    font-size: 18px;
+  }
+
+  .instruction-section li {
+    font-size: 14px;
+  }
+
+  .instructions-footer {
+    padding: 20px;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+
+  .btn-cancel-instructions,
+  .btn-start-test {
+    width: 100%;
+  }
+}

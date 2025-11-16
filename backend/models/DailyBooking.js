@@ -2,23 +2,26 @@ const mongoose = require('mongoose');
 
 const DailyBookingSchema = new mongoose.Schema({
   date: {
-    type: String,
+    type: Date,
     required: true,
     unique: true
   },
   testType: {
     type: String,
-    enum: ['colorVision', 'learnerTest'],
+    enum: ['colorVision', 'learnerTest', 'road'],
     required: true
   },
-  totalSlots: {
+  maxSlots: {
     type: Number,
     default: 50
   },
-  bookedSlots: {
-    type: Number,
-    default: 0
-  },
+  // detailed booked slot entries
+  bookedSlots: [{
+    applicationNumber: String,
+    timeSlot: String,
+    applicantName: String,
+    bookedAt: Date
+  }],
   availableSlots: {
     type: Number,
     default: 50
@@ -26,6 +29,10 @@ const DailyBookingSchema = new mongoose.Schema({
   isHoliday: {
     type: Boolean,
     default: false
+  },
+  holidayName: {
+    type: String,
+    default: null
   }
 }, {
   timestamps: true
@@ -36,64 +43,72 @@ DailyBookingSchema.index({ date: 1, testType: 1 });
 // Static method to check availability
 DailyBookingSchema.statics.checkAvailability = async function(date, testType) {
   let booking = await this.findOne({ date, testType });
-  
+
   if (!booking) {
     // Create new booking entry if it doesn't exist
     booking = await this.create({
       date,
       testType,
-      totalSlots: 50,
-      bookedSlots: 0,
+      maxSlots: 50,
+      bookedSlots: [],
       availableSlots: 50,
       isHoliday: false
     });
   }
-  
+
   if (booking.isHoliday) {
     return { available: false, reason: 'Holiday' };
   }
-  
-  if (booking.availableSlots <= 0) {
+
+  const bookedCount = Array.isArray(booking.bookedSlots) ? booking.bookedSlots.length : (booking.bookedSlots || 0);
+  if (booking.availableSlots <= 0 || bookedCount >= booking.maxSlots) {
     return { available: false, reason: 'No slots available' };
   }
-  
-  return { 
-    available: true, 
+
+  return {
+    available: true,
     availableSlots: booking.availableSlots,
-    totalSlots: booking.totalSlots,
-    bookedSlots: booking.bookedSlots
+    maxSlots: booking.maxSlots,
+    bookedSlots: bookedCount
   };
 };
 
 // Static method to book a slot
-DailyBookingSchema.statics.bookSlot = async function(date, testType, digilockerID) {
+DailyBookingSchema.statics.bookSlot = async function(date, testType, digilockerID, timeSlot = null, applicantName = null) {
   let booking = await this.findOne({ date, testType });
-  
+
   if (!booking) {
     // Create new booking entry if it doesn't exist
     booking = await this.create({
       date,
       testType,
-      totalSlots: 50,
-      bookedSlots: 0,
+      maxSlots: 50,
+      bookedSlots: [],
       availableSlots: 50,
       isHoliday: false
     });
   }
-  
+
   if (booking.isHoliday) {
     throw new Error('Cannot book on holiday');
   }
-  
-  if (booking.availableSlots <= 0) {
+
+  const bookedCount = Array.isArray(booking.bookedSlots) ? booking.bookedSlots.length : (booking.bookedSlots || 0);
+  if (booking.availableSlots <= 0 || bookedCount >= booking.maxSlots) {
     throw new Error('No slots available');
   }
-  
-  // Update booking
-  booking.bookedSlots += 1;
-  booking.availableSlots -= 1;
+
+  // Add a detailed booked slot
+  booking.bookedSlots.push({
+    applicationNumber: digilockerID,
+    timeSlot,
+    applicantName,
+    bookedAt: new Date()
+  });
+
+  booking.availableSlots = Math.max(0, booking.maxSlots - booking.bookedSlots.length);
   await booking.save();
-  
+
   return booking;
 };
 

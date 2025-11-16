@@ -1143,6 +1143,73 @@
   font-style: italic;
 }
 
+.scheduled-info {
+  margin-top: 16px;
+  text-align: center;
+  animation: fadeInScale 0.5s ease-out;
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.scheduled-details {
+  margin-top: 10px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border: 2px solid #3b82f6;
+  border-radius: 12px;
+  font-size: 15px;
+  color: #1e3a8a;
+  line-height: 1.8;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+  position: relative;
+  overflow: hidden;
+}
+
+.scheduled-details::before {
+  content: '📅';
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  font-size: 24px;
+  opacity: 0.3;
+}
+
+.scheduled-details::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+.scheduled-details strong {
+  color: #1e40af;
+  font-weight: 700;
+  font-size: 16px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
 .back-to-dashboard {
   margin-bottom: 20px;
 }
@@ -1167,3 +1234,97 @@
   color: white;
   transform: translateX(-4px);
 }
+
+/* License Download Section */
+.license-download-section {
+  margin-top: 30px;
+  padding: 20px;
+}
+
+.license-card {
+  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  border-radius: 15px;
+  padding: 30px;
+  display: flex;
+  align-items: center;
+  gap: 25px;
+  box-shadow: 0 8px 20px rgba(76, 175, 80, 0.3);
+  color: white;
+  animation: slideIn 0.5s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.license-icon {
+  font-size: 24px;
+  font-weight: bold;
+  background: rgba(255, 255, 255, 0.3);
+  padding: 15px 25px;
+  border-radius: 8px;
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.license-info-text {
+  flex: 1;
+}
+
+.license-info-text h3 {
+  margin: 0 0 10px 0;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.license-info-text p {
+  margin: 5px 0;
+  font-size: 16px;
+  opacity: 0.95;
+}
+
+.license-score {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.download-license-btn {
+  padding: 15px 30px;
+  background: white;
+  color: #4CAF50;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.download-license-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+}
+
+.status-text.failed-text {
+  color: #dc2626;
+  background: #fee2e2;
+  font-style: normal;
+  font-weight: 500;
+}
+
